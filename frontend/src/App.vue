@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
 import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Menu } from 'ant-design-vue'
 
 const route = useRoute()
 const selectedKeys = ref(['movies'])
@@ -41,7 +39,7 @@ watch(
       </a-menu>
     </a-layout-header>
     <a-layout-content>
-      <router-view></router-view>
+      <router-view/>
     </a-layout-content>
     <a-layout-footer style="text-align: center">
       电影评论情感分析系统 ©2024

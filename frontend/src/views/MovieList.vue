@@ -6,14 +6,14 @@
       </a-col>
       <a-col :xs="24" :sm="12" :md="8" :lg="6" v-for="movie in movies" :key="movie.movie_id">
         <a-card hoverable @click="goToDetail(movie.movie_id)">
-          <template #cover>
-            <img :alt="movie.title" :src="'data:image/webp;base64,' + movie.img.content" />
-          </template>
           <template #title>{{ movie.title }}</template>
-          <template #default>
-            <div class="movie-desc">{{ movie.description.substring(0, 100) }}...</div>
-            <div class="movie-genre">{{ movie.genre }}</div>
-          </template>
+          <div class="movie-genre">{{ movie.genre }}</div>
+          <div class="movie-desc">{{ movie.description.substring(0, 30) }}...</div>
+          <img
+            :src="'data:image/webp;base64,' + movie.img.content"
+            :alt="movie.title"
+            class="movie-poster"
+          />
         </a-card>
       </a-col>
     </a-row>
@@ -31,7 +31,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
@@ -83,11 +83,20 @@ onMounted(() => {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   margin-bottom: 8px;
+  padding: 5px;
+}
+
+.movie-poster {
+  width: 100%;
+  max-height: 600px;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .movie-genre {
   color: #666;
   font-size: 12px;
+  padding-bottom: 5px;
 }
 
 .pagination {
@@ -112,4 +121,4 @@ onMounted(() => {
 :deep(.ant-card-body) {
   padding: 16px;
 }
-</style> 
+</style>

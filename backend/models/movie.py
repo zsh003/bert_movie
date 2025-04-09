@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class Review(BaseModel):
@@ -13,7 +13,7 @@ class Image(BaseModel):
     content: str
 
 class Movie(BaseModel):
-    movie_id: str
+    movie_id: int
     title: str
     genre: str
     description: str

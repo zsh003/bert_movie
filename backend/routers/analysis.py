@@ -2,12 +2,13 @@ from fastapi import APIRouter, Request
 from typing import List
 import jieba
 from collections import Counter
+import config
 
 router = APIRouter()
 
 @router.get("/sentiment/{movie_id}")
-async def get_movie_sentiment(movie_id: str, request: Request):
-    movie = await request.app.mongodb["movies"].find_one({"movie_id": {"$numberLong": movie_id}})
+async def get_movie_sentiment(movie_id: int, request: Request):
+    movie = await request.app.mongodb[config.COLLECTION_NAME].find_one({"movie_id": movie_id})
     if not movie:
         return {"error": "Movie not found"}
     
@@ -21,8 +22,8 @@ async def get_movie_sentiment(movie_id: str, request: Request):
     }
 
 @router.get("/word-cloud/{movie_id}")
-async def get_word_cloud(movie_id: str, request: Request):
-    movie = await request.app.mongodb["movies"].find_one({"movie_id": {"$numberLong": movie_id}})
+async def get_word_cloud(movie_id: int, request: Request):
+    movie = await request.app.mongodb[config.COLLECTION_NAME].find_one({"movie_id": movie_id})
     if not movie:
         return {"error": "Movie not found"}
     
@@ -47,5 +48,5 @@ async def get_user_activity(request: Request):
         {"$limit": 10}
     ]
     
-    user_activity = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
+    user_activity = await request.app.mongodb[config.COLLECTION_NAME].aggregate(pipeline).to_list(length=None)
     return user_activity 

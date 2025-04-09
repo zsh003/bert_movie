@@ -4,7 +4,7 @@
       <a-col :span="24">
         <h1>数据分析</h1>
       </a-col>
-      
+
       <!-- 电影类型分布 -->
       <a-col :xs="24" :lg="12">
         <a-card title="电影类型分布">
@@ -46,11 +46,13 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
+
 import 'echarts-wordcloud'
+
 
 const genreChartRef = ref(null)
 const userActivityChartRef = ref(null)
@@ -78,7 +80,7 @@ const fetchGenreData = async () => {
   try {
     const response = await axios.get('http://localhost:8000/api/movies/genres/stats')
     const data = response.data
-    
+
     genreChart.setOption({
       title: {
         text: '电影类型分布'
@@ -114,7 +116,7 @@ const fetchUserActivity = async () => {
   try {
     const response = await axios.get('http://localhost:8000/api/analysis/user-activity')
     const data = response.data
-    
+
     userActivityChart.setOption({
       title: {
         text: '用户活跃度排行'
@@ -147,11 +149,11 @@ const fetchUserActivity = async () => {
 // 获取情感分析数据
 const fetchSentimentData = async () => {
   if (!selectedMovie.value) return
-  
+
   try {
     const response = await axios.get(`http://localhost:8000/api/analysis/sentiment/${selectedMovie.value}`)
     const data = response.data
-    
+
     sentimentChart.setOption({
       title: {
         text: '评论情感分布'
@@ -199,11 +201,11 @@ const fetchSentimentData = async () => {
 // 获取词云数据
 const fetchWordCloud = async () => {
   if (!selectedMovie.value) return
-  
+
   try {
     const response = await axios.get(`http://localhost:8000/api/analysis/word-cloud/${selectedMovie.value}`)
     const data = response.data
-    
+
     wordCloudChart.setOption({
       series: [{
         type: 'wordCloud',
@@ -263,7 +265,7 @@ onMounted(async () => {
   await fetchMovies()
   await fetchGenreData()
   await fetchUserActivity()
-  
+
   window.addEventListener('resize', () => {
     genreChart?.resize()
     userActivityChart?.resize()
@@ -283,4 +285,4 @@ watch(selectedMovie, () => {
 .analysis {
   padding: 24px;
 }
-</style> 
+</style>

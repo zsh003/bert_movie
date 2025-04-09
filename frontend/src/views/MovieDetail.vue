@@ -8,7 +8,7 @@
         />
       </a-col>
       <a-col :xs="24" :md="8">
-        <img 
+        <img
           :src="'data:image/webp;base64,' + movie.img.content"
           :alt="movie.title"
           class="movie-poster"
@@ -48,7 +48,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
@@ -99,4 +99,4 @@ onMounted(() => {
 :deep(.ant-tag) {
   margin: 4px;
 }
-</style> 
+</style>
