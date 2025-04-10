@@ -10,8 +10,8 @@ import random
 router = APIRouter()
 
 @router.get("/sentiment/{movie_id}")
-async def get_movie_sentiment(movie_id: str, request: Request):
-    movie = await request.app.mongodb["movies"].find_one({"movie_id": {"$numberLong": movie_id}})
+async def get_movie_sentiment(movie_id: int, request: Request):
+    movie = await request.app.mongodb["aqy_movie_reviews"].find_one({"movie_id": movie_id})
     if not movie:
         return {"error": "Movie not found"}
     
@@ -25,8 +25,8 @@ async def get_movie_sentiment(movie_id: str, request: Request):
     }
 
 @router.get("/word-cloud/{movie_id}")
-async def get_word_cloud(movie_id: str, request: Request):
-    movie = await request.app.mongodb["movies"].find_one({"movie_id": {"$numberLong": movie_id}})
+async def get_word_cloud(movie_id: int, request: Request):
+    movie = await request.app.mongodb["aqy_movie_reviews"].find_one({"movie_id": movie_id})
     if not movie:
         return {"error": "Movie not found"}
     
@@ -73,7 +73,7 @@ async def get_user_activity_trend(request: Request):
         }
     ]
     
-    user_activity = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
+    user_activity = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
     counts = [activity["review_count"] for activity in user_activity[:7]]
     
     return {
@@ -94,7 +94,7 @@ async def get_comment_length_distribution(request: Request):
         }
     ]
     
-    comments = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
+    comments = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
     
     short = len([c for c in comments if c["content_length"] < 50])
     medium = len([c for c in comments if 50 <= c["content_length"] <= 200])
@@ -126,11 +126,11 @@ async def get_user_activity(request: Request):
         {"$group": {
             "_id": "$reviews.uname",
             "review_count": {"$sum": 1},
-            "movies": {"$addToSet": "$title"}
+            "aqy_movie_reviews": {"$addToSet": "$title"}
         }},
         {"$sort": {"review_count": -1}},
         {"$limit": 10}
     ]
     
-    user_activity = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
+    user_activity = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
     return user_activity 

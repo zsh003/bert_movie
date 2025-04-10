@@ -39,7 +39,8 @@ async def register(user: UserCreate, request: Request = None):
         "id": user_dict["_id"],
         "username": user.username,
         "email": user.email,
-        "is_admin": user.is_admin
+        "is_admin": user.is_admin,
+        "created_at": user_dict["created_at"]
     }
 
 @router.post("/token", response_model=Token)
@@ -84,7 +85,7 @@ async def update_profile(
 ):
     db = get_database()
     await db.users.update_one(
-        {"_id": current_user.id},  # 直接使用当前用户ID
+        {"_id": current_user.user_id},  # 直接使用当前用户ID
         {"$set": user_update.dict(exclude_unset=True)}
     )
     return {"message": "Profile updated successfully"}
@@ -101,7 +102,7 @@ async def change_password(
         raise HTTPException(400, "Current password is incorrect")
     
     await db.users.update_one(
-        {"_id": current_user.id},
+        {"_id": current_user.user_id},
         {"$set": {"password": get_password_hash(password_update.newPassword)}}
     )
     return {"message": "Password changed successfully"}
@@ -114,22 +115,15 @@ async def upload_avatar(
 ):
     db = get_database()
     
-    user = await db.users.find_one({"token": token})
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-        )
-    
     # 创建上传目录
     upload_dir = "static/avatars"
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
 
     # 生成唯一文件名
-    filename = f"{current_user.id}{os.path.splitext(file.filename)[1]}"
+    filename = f"{current_user.user_id}{os.path.splitext(file.filename)[1]}"
     file_path = os.path.join(upload_dir, filename)
-    
+ 
     # 保存文件
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -137,7 +131,7 @@ async def upload_avatar(
     # 更新用户头像URL
     avatar_url = f"/static/avatars/{filename}"
     await db.users.update_one(
-        {"_id": current_user.id},
+        {"_id": current_user.user_id},
         {"$set": {"avatar": avatar_url}}
     )
     
@@ -150,7 +144,7 @@ async def get_user_activities(current_user: User = Depends(get_current_user)):
     activities = []
     
     # 获取评论
-    reviews = await db.reviews.find({"user_id": str(current_user._id)}).to_list(None)
+    reviews = await db.reviews.find({"user_id": str(current_user.user_id)}).to_list(None)
     for review in reviews:
         movie = await db.movies.find_one({"_id": review["movie_id"]})
         if movie:
@@ -164,7 +158,7 @@ async def get_user_activities(current_user: User = Depends(get_current_user)):
             })
     
     # 获取收藏
-    favorites = await db.favorites.find({"user_id": str(current_user._id)}).to_list(None)
+    favorites = await db.favorites.find({"user_id": str(current_user.user_id)}).to_list(None)
     for favorite in favorites:
         movie = await db.movies.find_one({"_id": favorite["movie_id"]})
         if movie:

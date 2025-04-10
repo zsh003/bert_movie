@@ -10,14 +10,14 @@ router = APIRouter()
 
 @router.post("/{movie_id}", status_code=status.HTTP_201_CREATED)
 async def add_favorite(
-    movie_id: str,
+    movie_id: int,
     current_user: User = Depends(get_current_user)
 ):
     db = get_database()
     
     # 检查是否已经收藏
     existing = await db.favorites.find_one({
-        "user_id": str(current_user.id),
+        "user_id": str(current_user.user_id),
         "movie_id": movie_id
     })
     
@@ -26,7 +26,7 @@ async def add_favorite(
     
     favorite = {
         "_id": str(uuid.uuid4()),
-        "user_id": str(current_user.id),
+        "user_id": str(current_user.user_id),
         "movie_id": movie_id,
         "created_at": datetime.utcnow()
     }
@@ -38,14 +38,14 @@ async def add_favorite(
 async def get_my_favorites(current_user: User = Depends(get_current_user)):
     db = get_database()
     # 获取用户的收藏电影列表
-    favorites = await db.favorites.find({"user_id": str(current_user.id)}).sort("created_at", -1).to_list(None)
+    favorites = await db.favorites.find({"user_id": str(current_user.user_id)}).sort("created_at", -1).to_list(None)
     
     # 获取收藏电影的详细信息
-    movie_ids = [fav["movie_id"] for fav in favorites]
-    movies = await db.movies.find({"_id": {"$in": movie_ids}}).to_list(None)
+    movie_ids = [fav["user_id"] for fav in favorites]
+    movies = await db.movies.find({"movie_id": {"$in": movie_ids}}).to_list(None)
     
     # 将收藏时间添加到电影信息中
-    movie_dict = {movie["_id"]: movie for movie in movies}
+    movie_dict = {movie["movie_id"]: movie for movie in movies}
     result = []
     for fav in favorites:
         if fav["movie_id"] in movie_dict:
@@ -67,7 +67,7 @@ async def remove_favorite(
     if not favorite:
         raise HTTPException(status_code=404, detail="收藏记录不存在")
     
-    if favorite["user_id"] != str(current_user.id):
+    if favorite["user_id"] != str(current_user.user_id):
         raise HTTPException(status_code=403, detail="没有权限删除此收藏")
     
     await db.favorites.delete_one({"_id": favorite_id})
@@ -75,12 +75,12 @@ async def remove_favorite(
 
 @router.get("/check/{movie_id}")
 async def check_favorite(
-    movie_id: str,
+    movie_id: int,
     current_user: User = Depends(get_current_user)
 ):
     db = get_database()
     favorite = await db.favorites.find_one({
-        "user_id": str(current_user.id),
+        "user_id": str(current_user.user_id),
         "movie_id": movie_id
     })
     return {"is_favorite": bool(favorite)} 

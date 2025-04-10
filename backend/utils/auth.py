@@ -18,7 +18,11 @@ async def get_user(username: str):
     client = AsyncIOMotorClient(MONGODB_URL)
     db = client[DB_NAME]
     user = await db.users.find_one({"username": username})
-    return User(**user) if user else None
+    if user:
+        # 转换ObjectId为字符串
+        user['_id'] = str(user['_id'])
+        return User(**user)
+    return None
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)

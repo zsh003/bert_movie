@@ -50,7 +50,7 @@ async def init_database():
     
     users = [
         {
-            "_id": "user",  # 使用固定ID以便关联
+            "user_id": "1",
             "username": "user",
             "email": "user@example.com",
             "password": get_password_hash("123456"),
@@ -58,7 +58,7 @@ async def init_database():
             "created_at": datetime.now(timezone.utc),
         },
         {
-            "_id": "admin",
+            "user_id": "2",
             "username": "admin",
             "email": "admin@example.com", 
             "password": get_password_hash("123456"),
