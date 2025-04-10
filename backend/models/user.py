@@ -14,7 +14,7 @@ class UserLogin(BaseModel):
     password: str
 
 class User(UserBase):
-    id: str
+    _id: str
     
 class Token(BaseModel):
     access_token: str

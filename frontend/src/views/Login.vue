@@ -51,11 +51,15 @@ const formState = reactive({
 
 const onFinish = async (values) => {
   try {
-    const formData = new FormData()
-    formData.append('username', values.username)
-    formData.append('password', values.password)
+    const params = new URLSearchParams()
+    params.append('username', values.username)
+    params.append('password', values.password)
 
-    const response = await axios.post('http://localhost:8000/api/users/token', formData)
+    const response = await axios.post('http://localhost:8000/api/users/token', params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'  // 必须指定这个请求头
+      }
+    })
     const { access_token } = response.data
 
     // 保存token

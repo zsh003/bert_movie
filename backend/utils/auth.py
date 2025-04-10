@@ -5,15 +5,24 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from models.user import TokenData, User
+from config import MONGODB_URL, DB_NAME
 
 # 配置密码加密
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # 配置JWT
-SECRET_KEY = "your-secret-key-keep-it-secret"  # 在实际应用中应该从环境变量获取
+SECRET_KEY = "secret"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 # 30分钟
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+async def get_user(username: str):
+    # 新增用户查询函数
+    from motor.motor_asyncio import AsyncIOMotorClient
+    client = AsyncIOMotorClient(MONGODB_URL)
+    db = client[DB_NAME]
+    user = await db.users.find_one({"username": username})
+    return User(**user) if user else None
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -42,14 +51,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db = None):
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
         
-    user = await db["users"].find_one({"username": token_data.username})
+    user = await get_user(username=username)
     if user is None:
         raise credentials_exception
-    return User(**user)
+    return user
 
 async def get_current_admin(current_user: User = Depends(get_current_user)):
     if not current_user.is_admin:

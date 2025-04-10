@@ -1,48 +1,131 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import { ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from './stores/user'
+import {
+  HomeOutlined,
+  BarChartOutlined,
+  UserOutlined,
+  LoginOutlined,
+  LogoutOutlined,
+  DashboardOutlined
+} from '@ant-design/icons-vue'
 
 const route = useRoute()
-const selectedKeys = ref(['movies'])
+const router = useRouter()
+const userStore = useUserStore()
 
-// 根据路由更新选中的菜单项
-watch(
-  () => route.path,
-  (path) => {
-    if (path === '/') {
-      selectedKeys.value = ['movies']
-    } else if (path === '/analysis') {
-      selectedKeys.value = ['analysis']
+const selectedKeys = ref([route.name])
+const collapsed = ref(false)
+
+// 菜单配置
+const menus = computed(() => {
+  const baseMenus = [
+    {
+      key: 'MovieList',
+      icon: HomeOutlined,
+      title: '电影列表',
+      path: '/'
+    },
+    {
+      key: 'Analysis',
+      icon: BarChartOutlined,
+      title: '数据分析',
+      path: '/analysis'
     }
-  },
-  { immediate: true }
+  ]
+
+  // 根据用户登录状态添加菜单项
+  if (userStore.isLoggedIn) {
+    if (userStore.isAdmin) {
+      baseMenus.push({
+        key: 'Admin',
+        icon: DashboardOutlined,
+        title: '管理控制台',
+        path: '/admin'
+      })
+    }
+  } else {
+    baseMenus.push({
+      key: 'Login',
+      icon: LoginOutlined,
+      title: '登录',
+      path: '/login'
+    })
+  }
+
+  return baseMenus
+})
+
+// 监听路由变化
+watch(
+  () => route.name,
+  (name) => {
+    if (name) {
+      selectedKeys.value = [name]
+    }
+  }
 )
+
+const handleMenuClick = (menu) => {
+  router.push(menu.key === 'MovieList' ? '/' : `/${menu.key.toLowerCase()}`)
+}
+
+const handleLogout = async () => {
+  userStore.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
   <a-layout class="layout">
-    <a-layout-header>
-      <div class="logo">电影分析系统</div>
+    <a-layout-header class="header">
+      <div class="logo">基于BERT的中文电影评论情感分析系统</div>
       <a-menu
         v-model:selectedKeys="selectedKeys"
         theme="dark"
         mode="horizontal"
-        :style="{ lineHeight: '64px' }"
+        class="menu"
       >
-        <a-menu-item key="movies">
-          <router-link to="/">电影列表</router-link>
-        </a-menu-item>
-        <a-menu-item key="analysis">
-          <router-link to="/analysis">数据分析</router-link>
+        <a-menu-item v-for="menu in menus" :key="menu.key">
+          <router-link :to="menu.path">
+            <component :is="menu.icon" />
+            <span>{{ menu.title }}</span>
+          </router-link>
         </a-menu-item>
       </a-menu>
+      <div class="header-right" v-if="userStore.isLoggedIn">
+        <a-dropdown>
+          <a class="user-dropdown" @click.prevent>
+            <a-avatar>
+              <template #icon><UserOutlined /></template>
+            </a-avatar>
+            <span class="username">{{ userStore.user?.username }}</span>
+          </a>
+          <template #overlay>
+            <a-menu>
+              <a-menu-item @click="handleLogout">
+                <LogoutOutlined />
+                <span>退出登录</span>
+              </a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+      </div>
     </a-layout-header>
+
     <a-layout-content>
-      <router-view/>
+      <div class="main-content">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </div>
     </a-layout-content>
-    <a-layout-footer style="text-align: center">
-      电影评论情感分析系统 ©2024
+
+    <a-layout-footer class="footer">
+      基于BERT的中文电影评论情感分析系统 ©2024
     </a-layout-footer>
   </a-layout>
 </template>
@@ -118,17 +201,107 @@ nav a:first-of-type {
   min-height: 100vh;
 }
 
-.ant-layout-header {
+.header {
   display: flex;
   align-items: center;
+  padding: 0 24px;
+  background: #001529;
+  position: fixed;
+  width: 100%;
+  z-index: 1000;
 }
 
-.ant-layout-content {
-  background: #fff;
+.logo {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  margin-right: 48px;
+  white-space: nowrap;
+}
+
+.menu {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-right {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.user-dropdown {
+  color: white;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.username {
+  margin-left: 8px;
+  color: white;
+}
+
+.main-content {
+  padding: 88px 24px 24px;
   min-height: calc(100vh - 64px - 70px);
+  background: #f0f2f5;
 }
 
-.ant-layout-footer {
+.footer {
+  text-align: center;
   padding: 24px;
+  background: #f0f2f5;
+}
+
+/* 路由过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 覆盖 Ant Design Vue 的一些默认样式 */
+.ant-layout-header {
+  height: 64px;
+  line-height: 64px;
+  padding: 0 24px;
+}
+
+.ant-menu-horizontal {
+  border-bottom: none;
+}
+
+.ant-menu-horizontal > .ant-menu-item,
+.ant-menu-horizontal > .ant-menu-submenu {
+  height: 64px;
+  line-height: 64px;
+  border-bottom: none;
+}
+
+.ant-menu-horizontal > .ant-menu-item:hover {
+  border-bottom: 2px solid #1890ff;
+}
+
+.ant-menu-horizontal > .ant-menu-item-selected {
+  border-bottom: 2px solid #1890ff;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .logo {
+    margin-right: 24px;
+  }
+
+  .username {
+    display: none;
+  }
+
+  .main-content {
+    padding: 88px 12px 12px;
+  }
 }
 </style>
