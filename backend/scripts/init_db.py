@@ -2,7 +2,7 @@ import json
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ASCENDING
-from datetime import datetime
+from datetime import datetime, timezone 
 from pathlib import Path
 import sys
 import os
@@ -49,17 +49,24 @@ async def init_database():
         print("创建users集合...")
         await db.create_collection("users")
         
-        # 管理员用户
-        admin_user = {
-            "username": "admin",
-            "email": "admin@example.com",
-            "password": get_password_hash("123456"),
-            "is_admin": True,
-            "created_at": datetime.astimezone(datetime.now(), tz=None),
-        }
-        
-        await db.users.insert_one(admin_user)
-        print("创建默认管理员用户：admin (密码: 123456)")
+        users = [
+            {
+                "username": "user",
+                "email": "user@example.com",
+                "password": get_password_hash("123456"),
+                "is_admin": False,
+                "created_at": datetime.now(timezone.utc),  # UTC时区时间
+            },
+            {
+                "username": "admin",
+                "email": "admin@example.com", 
+                "password": get_password_hash("123456"),
+                "is_admin": True,
+                "created_at": datetime.now(timezone.utc),
+            }
+        ]
+
+        await db.users.insert_many(users)
         
         await db.users.create_index([("username", ASCENDING)], unique=True)
         await db.users.create_index([("email", ASCENDING)], unique=True)
@@ -67,7 +74,7 @@ async def init_database():
     else:
         print("用户集合已存在")
     print("数据库初始化完成！")
-    await client.close()
+    client.close()
 
 if __name__ == "__main__":
     asyncio.run(init_database()) 

@@ -14,5 +14,6 @@ npm run dev
 echo 系统启动完成！
 echo 后端API地址：http://localhost:8000
 echo 前端页面地址：http://localhost:5173
-echo 默认管理员账号：admin
-echo 默认管理员密码：admin123 
+echo 后端API文档：http://localhost:8000/docs
+echo 默认普通账号密码：user/123456
+echo 默认管理员账号密码：admin/123456
