@@ -69,7 +69,11 @@ async def get_users(
     current_user: User = Depends(get_current_admin),
     request: Request = None
 ):
-    users = await request.app.mongodb["users"].find().to_list(length=None)
+    raw_users = await request.app.mongodb["users"].find().to_list(length=None)
+    users = []
+    for user in raw_users:
+        user["_id"] = str(user["_id"])  # 转换ObjectId为字符串
+        users.append(user)
     return users
 
 # 获取当前用户信息
