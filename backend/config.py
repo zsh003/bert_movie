@@ -4,6 +4,16 @@ import os
 
 load_dotenv()
 
-MONGODB_URL = os.getenv("MONGODB_URL")
-DB_NAME = os.getenv("DB_NAME") 
-COLLECTION_NAME = os.getenv("COLLECTION_NAME") 
+# MongoDB 配置
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+DB_NAME = os.getenv("DB_NAME", "bert_movie")
+
+# JWT 配置
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# 文件上传配置
+UPLOAD_DIR = "static/avatars"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR) 

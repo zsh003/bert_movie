@@ -2,7 +2,6 @@ from fastapi import APIRouter, Request, HTTPException
 from typing import List
 from models.movie import Movie, MovieDetail
 from bson import ObjectId
-import config
 
 router = APIRouter()
 
@@ -22,12 +21,12 @@ async def get_movies(request: Request, skip: int = 0, limit: int = 1):
         {"$skip": skip},
         {"$limit": limit}
     ]
-    movies = await request.app.mongodb[config.COLLECTION_NAME].aggregate(pipeline).to_list(length=limit)
+    movies = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=limit)
     return movies
 
 @router.get("/{movie_id}", response_model=MovieDetail)
 async def get_movie(movie_id: int, request: Request):
-    movie = await request.app.mongodb[config.COLLECTION_NAME].find_one({
+    movie = await request.app.mongodb["aqy_movie_reviews"].find_one({
         "movie_id": movie_id
     })
     if movie is None:
@@ -45,5 +44,5 @@ async def get_genre_stats(request: Request):
         {"$group": {"_id": "$genre", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}}
     ]
-    genres = await request.app.mongodb[config.COLLECTION_NAME].aggregate(pipeline).to_list(length=None)
+    genres = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
     return genres 

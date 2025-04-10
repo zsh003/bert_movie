@@ -8,14 +8,17 @@ import {
   UserOutlined,
   LoginOutlined,
   LogoutOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  HeartOutlined,
+  CommentOutlined,
+  SettingOutlined
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-const selectedKeys = ref([route.name])
+const selectedKeys = ref([route.name as string])
 const collapsed = ref(false)
 
 // 菜单配置
@@ -25,27 +28,48 @@ const menus = computed(() => {
       key: 'MovieList',
       icon: HomeOutlined,
       title: '电影列表',
-      path: '/'
-    },
-    {
-      key: 'Analysis',
-      icon: BarChartOutlined,
-      title: '数据分析',
-      path: '/analysis'
+      path: '/',
+      requiresAuth: true
     }
   ]
 
-  // 根据用户登录状态添加菜单项
+  // 已登录用户菜单
   if (userStore.isLoggedIn) {
     if (userStore.isAdmin) {
-      baseMenus.push({
-        key: 'Admin',
-        icon: DashboardOutlined,
-        title: '管理控制台',
-        path: '/admin'
-      })
+      // 管理员菜单
+      baseMenus.push(
+        {
+          key: 'Analysis',
+          icon: BarChartOutlined,
+          title: '数据分析',
+          path: '/analysis'
+        },
+        {
+          key: 'Admin',
+          icon: DashboardOutlined,
+          title: '管理控制台',
+          path: '/admin'
+        }
+      )
+    } else {
+      // 普通用户菜单
+      baseMenus.push(
+        {
+          key: 'Favorites',
+          icon: HeartOutlined,
+          title: '我的收藏',
+          path: '/favorites'
+        },
+        {
+          key: 'MyReviews',
+          icon: CommentOutlined,
+          title: '我的评论',
+          path: '/reviews'
+        }
+      )
     }
   } else {
+    // 未登录用户菜单
     baseMenus.push({
       key: 'Login',
       icon: LoginOutlined,
@@ -55,6 +79,34 @@ const menus = computed(() => {
   }
 
   return baseMenus
+})
+
+// 用户下拉菜单项
+const userMenuItems = computed(() => {
+  const items = [
+    {
+      key: 'profile',
+      icon: UserOutlined,
+      title: '个人信息',
+      onClick: () => router.push('/profile')
+    },
+    {
+      key: 'settings',
+      icon: SettingOutlined,
+      title: '账号设置',
+      onClick: () => router.push('/profile?tab=settings')
+    },
+    {
+      type: 'divider'
+    },
+    {
+      key: 'logout',
+      icon: LogoutOutlined,
+      title: '退出登录',
+      onClick: handleLogout
+    }
+  ]
+  return items
 })
 
 // 监听路由变化
@@ -97,17 +149,20 @@ const handleLogout = async () => {
       <div class="header-right" v-if="userStore.isLoggedIn">
         <a-dropdown>
           <a class="user-dropdown" @click.prevent>
-            <a-avatar>
+            <a-avatar :src="userStore.user?.avatar">
               <template #icon><UserOutlined /></template>
             </a-avatar>
             <span class="username">{{ userStore.user?.username }}</span>
           </a>
           <template #overlay>
             <a-menu>
-              <a-menu-item @click="handleLogout">
-                <LogoutOutlined />
-                <span>退出登录</span>
-              </a-menu-item>
+              <template v-for="item in userMenuItems" :key="item.key">
+                <a-menu-divider v-if="item.type === 'divider'" />
+                <a-menu-item v-else @click="item.onClick">
+                  <component :is="item.icon" />
+                  <span>{{ item.title }}</span>
+                </a-menu-item>
+              </template>
             </a-menu>
           </template>
         </a-dropdown>
