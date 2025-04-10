@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from utils.auth import get_current_user
 from models.user import User
 import random
+from jieba import analyse
 
 router = APIRouter()
 
@@ -133,4 +134,58 @@ async def get_user_activity(request: Request):
     ]
     
     user_activity = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
-    return user_activity 
+    return user_activity
+
+
+@router.get("/reviews")
+async def get_review_analytics(request: Request):
+    """获取影评数据分析"""
+    # 获取所有评论
+    pipeline = [
+        {
+            "$unwind": "$reviews"
+        }
+    ]
+    
+    reviews = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
+    
+    # 1. 情感分布统计
+    sentiment_counts = Counter(review.sentiment for review in reviews)
+    sentiment_distribution = {
+        "positive": sentiment_counts["positive"],
+        "neutral": sentiment_counts["neutral"],
+        "negative": sentiment_counts["negative"]
+    }
+    
+    # 2. 评论数量趋势（最近30天）
+    today = datetime.now()
+    thirty_days_ago = today - timedelta(days=30)
+    dates = []
+    counts = []
+    
+    for i in range(30):
+        date = thirty_days_ago + timedelta(days=i)
+        date_str = date.strftime("%Y-%m-%d")
+        count = sum(1 for review in reviews 
+                   if review.created_at.date() == date.date())
+        dates.append(date_str)
+        counts.append(count)
+    
+    review_trend = {
+        "dates": dates,
+        "counts": counts
+    }
+    
+    # 3. 热门关键词提取
+    all_content = " ".join(review.content for review in reviews)
+    keywords = analyse.extract_tags(all_content, topK=50, withWeight=True)
+    keywords_data = [
+        {"word": word, "weight": round(weight * 100, 2)}
+        for word, weight in keywords
+    ]
+    
+    return {
+        "sentimentDistribution": sentiment_distribution,
+        "reviewTrend": review_trend,
+        "keywords": keywords_data
+    } 
