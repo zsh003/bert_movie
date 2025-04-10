@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-from routers import movies, analysis
+from routers import movies, analysis, users
 import config
 
 app = FastAPI(title="Movie Analysis System API")
@@ -25,6 +25,7 @@ async def shutdown_db_client():
     app.mongodb_client.close()
 
 # 包含路由
+app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(movies.router, prefix="/api/movies", tags=["movies"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
 
