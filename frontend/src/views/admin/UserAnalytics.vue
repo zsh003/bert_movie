@@ -1,9 +1,9 @@
 <template>
   <div class="user-analytics">
-    <h2>用户数据分析</h2>
+    <a-page-header title="用户数据分析" />
     
     <a-row :gutter="[16, 16]">
-      <a-col :span="12">
+      <a-col :span="24">
         <a-card title="用户活跃度">
           <div ref="activityChartRef" style="height: 400px"></div>
         </a-card>
@@ -13,7 +13,7 @@
           <div ref="registrationChartRef" style="height: 400px"></div>
         </a-card>
       </a-col>
-      <a-col :span="24">
+      <a-col :span="12">
         <a-card title="用户行为分析">
           <div ref="behaviorChartRef" style="height: 400px"></div>
         </a-card>
@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue';
+import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue';
 import { message } from 'ant-design-vue';
 import axios from 'axios';
 import * as echarts from 'echarts';
@@ -53,91 +53,129 @@ export default defineComponent({
 
     const fetchData = async () => {
       try {
-        const response = await axios.get('/api/analytics/users');
-        const data = response.data;
-
+        const { data } = await axios.get('/api/analytics/users');
+        
         // 用户活跃度热力图
         const activityOption: EChartsOption = {
-          tooltip: {
-            position: 'top'
-          },
-          calendar: {
-            top: 40,
-            left: 30,
-            right: 30,
-            cellSize: ['auto', 20],
-            range: data.activityRange,
-            itemStyle: {
-              borderWidth: 0.5
-            }
-          },
-          visualMap: {
-            min: 0,
-            max: 10,
-            calculable: true,
-            orient: 'horizontal',
-            left: 'center',
-            top: 0
-          },
-          series: [{
-            type: 'heatmap',
-            coordinateSystem: 'calendar',
-            data: data.activityData
-          }]
-        };
-        activityChart.setOption(activityOption);
-
-        // 用户注册趋势折线图
-        const registrationOption: EChartsOption = {
-          tooltip: {
-            trigger: 'axis'
-          },
-          xAxis: {
-            type: 'category',
-            data: data.registrationTrend.map(item => item.date)
-          },
-          yAxis: {
-            type: 'value'
-          },
-          series: [
-            {
-              name: '新注册用户',
-              type: 'line',
-              smooth: true,
-              data: data.registrationTrend.map(item => item.count)
-            }
-          ]
-        };
-        registrationChart.setOption(registrationOption);
-
-        // 用户行为分析柱状图
-        const behaviorOption: EChartsOption = {
           tooltip: {
             trigger: 'axis',
             axisPointer: {
               type: 'shadow'
             }
           },
-          legend: {
-            data: ['评论', '收藏']
-          },
           xAxis: {
             type: 'category',
-            data: data.behaviorAnalysis.dates
+            data: data.activityData.dates,
+            axisLabel: {
+              rotate: 45
+            }
           },
           yAxis: {
-            type: 'value'
+            type: 'value',
+            name: '活跃用户数'
           },
           series: [
             {
-              name: '评论',
-              type: 'bar',
-              data: data.behaviorAnalysis.reviews
-            },
+              name: '活跃用户',
+              type: 'line',
+              smooth: true,
+              areaStyle: {
+                opacity: 0.3
+              },
+              data: data.activityData.counts,
+              itemStyle: {
+                color: '#5470c6'
+              },
+              markPoint: {
+                data: [
+                  { type: 'max', name: '最大值' },
+                  { type: 'min', name: '最小值' }
+                ]
+              }
+            }
+          ]
+        };
+        activityChart.setOption(activityOption);
+
+        // 用户注册趋势图
+        const registrationOption: EChartsOption = {
+          tooltip: {
+            trigger: 'axis'
+          },
+          xAxis: {
+            type: 'category',
+            data: data.registrationTrend.months,
+            axisLabel: {
+              rotate: 45
+            }
+          },
+          yAxis: {
+            type: 'value',
+            name: '注册用户数'
+          },
+          series: [
             {
-              name: '收藏',
+              name: '注册用户',
               type: 'bar',
-              data: data.behaviorAnalysis.favorites
+              data: data.registrationTrend.counts,
+              itemStyle: {
+                color: '#91cc75'
+              },
+              label: {
+                show: true,
+                position: 'top'
+              }
+            }
+          ]
+        };
+        registrationChart.setOption(registrationOption);
+
+        // 用户行为分析饼图
+        const total = data.userBehaviors.totalUsers;
+        const behaviorOption: EChartsOption = {
+          tooltip: {
+            trigger: 'item',
+            formatter: '{a} <br/>{b}: {c} ({d}%)'
+          },
+          legend: {
+            orient: 'vertical',
+            left: 'left'
+          },
+          series: [
+            {
+              name: '用户行为',
+              type: 'pie',
+              radius: ['40%', '70%'],
+              avoidLabelOverlap: false,
+              label: {
+                show: true,
+                position: 'outside',
+                formatter: '{b}: {c}'
+              },
+              emphasis: {
+                label: {
+                  show: true,
+                  fontSize: '16',
+                  fontWeight: 'bold'
+                }
+              },
+              data: [
+                {
+                  name: '评论用户',
+                  value: data.userBehaviors.reviews,
+                  itemStyle: { color: '#5470c6' }
+                },
+                {
+                  name: '收藏用户',
+                  value: data.userBehaviors.favorites,
+                  itemStyle: { color: '#91cc75' }
+                },
+                {
+                  name: '其他用户',
+                  value: total - data.userBehaviors.reviews - data.userBehaviors.favorites,
+                  itemStyle: { color: '#fac858' }
+                }
+              ]
             }
           ]
         };
@@ -145,18 +183,27 @@ export default defineComponent({
 
       } catch (error) {
         message.error('获取数据失败');
+        console.error('Error fetching user analytics:', error);
       }
+    };
+
+    const handleResize = () => {
+      activityChart?.resize();
+      registrationChart?.resize();
+      behaviorChart?.resize();
     };
 
     onMounted(() => {
       initCharts();
       fetchData();
+      window.addEventListener('resize', handleResize);
+    });
 
-      window.addEventListener('resize', () => {
-        activityChart?.resize();
-        registrationChart?.resize();
-        behaviorChart?.resize();
-      });
+    onBeforeUnmount(() => {
+      window.removeEventListener('resize', handleResize);
+      activityChart?.dispose();
+      registrationChart?.dispose();
+      behaviorChart?.dispose();
     });
 
     return {
@@ -171,9 +218,26 @@ export default defineComponent({
 <style scoped>
 .user-analytics {
   padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
 }
 
-h2 {
-  margin-bottom: 24px;
+:deep(.ant-card) {
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+:deep(.ant-card-head) {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 24px;
+}
+
+:deep(.ant-card-head-title) {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+:deep(.ant-page-header) {
+  padding: 16px 0;
 }
 </style> 

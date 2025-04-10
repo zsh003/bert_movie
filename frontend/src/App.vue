@@ -13,6 +13,7 @@ import {
   CommentOutlined,
   SettingOutlined
 } from '@ant-design/icons-vue'
+import zhCN from 'ant-design-vue/es/locale/zh_CN'
 
 const route = useRoute()
 const router = useRouter()
@@ -130,59 +131,61 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <a-layout class="layout">
-    <a-layout-header class="header">
-      <div class="logo">基于BERT的中文电影评论情感分析系统</div>
-      <a-menu
-        v-model:selectedKeys="selectedKeys"
-        theme="dark"
-        mode="horizontal"
-        class="menu"
-      >
-        <a-menu-item v-for="menu in menus" :key="menu.key">
-          <router-link :to="menu.path">
-            <component :is="menu.icon" />
-            <span>{{ menu.title }}</span>
-          </router-link>
-        </a-menu-item>
-      </a-menu>
-      <div class="header-right" v-if="userStore.isLoggedIn">
-        <a-dropdown>
-          <a class="user-dropdown" @click.prevent>
-            <a-avatar :src="userStore.user?.avatar">
-              <template #icon><UserOutlined /></template>
-            </a-avatar>
-            <span class="username">{{ userStore.user?.username }}</span>
-          </a>
-          <template #overlay>
-            <a-menu>
-              <template v-for="item in userMenuItems" :key="item.key">
-                <a-menu-divider v-if="item.type === 'divider'" />
-                <a-menu-item v-else @click="item.onClick">
-                  <component :is="item.icon" />
-                  <span>{{ item.title }}</span>
-                </a-menu-item>
-              </template>
-            </a-menu>
-          </template>
-        </a-dropdown>
-      </div>
-    </a-layout-header>
+  <a-config-provider :locale="zhCN">
+    <a-layout class="layout">
+      <a-layout-header class="header">
+        <div class="logo">基于BERT的中文电影评论情感分析系统</div>
+        <a-menu
+          v-model:selectedKeys="selectedKeys"
+          theme="dark"
+          mode="horizontal"
+          class="menu"
+        >
+          <a-menu-item v-for="menu in menus" :key="menu.key">
+            <router-link :to="menu.path">
+              <component :is="menu.icon" />
+              <span>{{ menu.title }}</span>
+            </router-link>
+          </a-menu-item>
+        </a-menu>
+        <div class="header-right" v-if="userStore.isLoggedIn">
+          <a-dropdown>
+            <a class="user-dropdown" @click.prevent>
+              <a-avatar :src="userStore.user?.avatar">
+                <template #icon><UserOutlined /></template>
+              </a-avatar>
+              <span class="username">{{ userStore.user?.username }}</span>
+            </a>
+            <template #overlay>
+              <a-menu>
+                <template v-for="item in userMenuItems" :key="item.key">
+                  <a-menu-divider v-if="item.type === 'divider'" />
+                  <a-menu-item v-else @click="item.onClick">
+                    <component :is="item.icon" />
+                    <span>{{ item.title }}</span>
+                  </a-menu-item>
+                </template>
+              </a-menu>
+            </template>
+          </a-dropdown>
+        </div>
+      </a-layout-header>
 
-    <a-layout-content>
-      <div class="main-content">
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
-      </div>
-    </a-layout-content>
+      <a-layout-content>
+        <div class="main-content">
+          <router-view v-slot="{ Component }">
+            <transition name="fade" mode="out-in">
+              <component :is="Component" />
+            </transition>
+          </router-view>
+        </div>
+      </a-layout-content>
 
-    <a-layout-footer class="footer">
-      基于BERT的中文电影评论情感分析系统 ©2024
-    </a-layout-footer>
-  </a-layout>
+      <a-layout-footer class="footer">
+        基于BERT的中文电影评论情感分析系统 ©2024
+      </a-layout-footer>
+    </a-layout>
+  </a-config-provider>
 </template>
 
 <style scoped>
@@ -250,6 +253,11 @@ nav a:first-of-type {
 
 #app {
   height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .layout {
@@ -358,5 +366,60 @@ nav a:first-of-type {
   .main-content {
     padding: 88px 12px 12px;
   }
+}
+
+/* NProgress 样式覆盖 */
+#nprogress .bar {
+  background: #1890ff !important;
+}
+
+#nprogress .spinner-icon {
+  border-top-color: #1890ff !important;
+  border-left-color: #1890ff !important;
+}
+
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 全局过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
 }
 </style>

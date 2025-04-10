@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { message } from 'ant-design-vue'
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
 
 // 导入新的页面组件
 import Reviews from '../views/Reviews.vue'
@@ -47,7 +49,24 @@ const routes: Array<RouteRecordRaw> = [
     path: '/admin',
     name: 'Admin',
     component: Admin,
-    meta: { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: 'reviews',
+        name: 'review-analytics',
+        component: () => import('../views/admin/ReviewAnalytics.vue')
+      },
+      {
+        path: 'movies',
+        name: 'movie-analytics',
+        component: () => import('../views/admin/MovieAnalytics.vue')
+      },
+      {
+        path: 'users',
+        name: 'user-analytics',
+        component: () => import('../views/admin/UserAnalytics.vue')
+      }
+    ]
   },
   {
     path: '/profile',
@@ -81,6 +100,7 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
+  NProgress.start()
   const userStore = useUserStore()
 
   if (to.matched.some(record => record.meta.requiresAuth)) {
@@ -101,6 +121,10 @@ router.beforeEach(async (to, from, next) => {
   }
 
   next()
+})
+
+router.afterEach(() => {
+  NProgress.done()
 })
 
 export default router 

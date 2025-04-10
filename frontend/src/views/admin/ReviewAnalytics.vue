@@ -1,6 +1,6 @@
 <template>
   <div class="review-analytics">
-    <h2>影评数据分析</h2>
+    <a-page-header title="影评数据分析" />
     
     <a-row :gutter="[16, 16]">
       <a-col :span="12">
@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue';
+import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue';
 import { message } from 'ant-design-vue';
 import axios from 'axios';
 import * as echarts from 'echarts';
@@ -54,9 +54,8 @@ export default defineComponent({
 
     const fetchData = async () => {
       try {
-        const response = await axios.get('/api/analytics/reviews');
-        const data = response.data;
-
+        const { data } = await axios.get('/api/analytics/reviews');
+        
         // 情感分布饼图
         const sentimentOption: EChartsOption = {
           tooltip: {
@@ -76,7 +75,8 @@ export default defineComponent({
               avoidLabelOverlap: false,
               label: {
                 show: true,
-                position: 'outside'
+                position: 'outside',
+                formatter: '{b}: {c} ({d}%)'
               },
               emphasis: {
                 label: {
@@ -86,9 +86,9 @@ export default defineComponent({
                 }
               },
               data: [
-                { value: data.sentimentDistribution.positive, name: '积极' },
-                { value: data.sentimentDistribution.neutral, name: '中性' },
-                { value: data.sentimentDistribution.negative, name: '消极' }
+                { value: data.sentimentDistribution.positive, name: '积极', itemStyle: { color: '#91cc75' } },
+                { value: data.sentimentDistribution.neutral, name: '中性', itemStyle: { color: '#fac858' } },
+                { value: data.sentimentDistribution.negative, name: '消极', itemStyle: { color: '#ee6666' } }
               ]
             }
           ]
@@ -98,22 +98,34 @@ export default defineComponent({
         // 评论数量趋势图
         const trendOption: EChartsOption = {
           tooltip: {
-            trigger: 'axis'
+            trigger: 'axis',
+            axisPointer: {
+              type: 'shadow'
+            }
           },
           xAxis: {
             type: 'category',
-            data: data.reviewTrend.dates
+            data: data.reviewTrend.dates,
+            axisLabel: {
+              rotate: 45
+            }
           },
           yAxis: {
-            type: 'value'
+            type: 'value',
+            name: '评论数量'
           },
           series: [
             {
               name: '评论数量',
               type: 'line',
               smooth: true,
-              areaStyle: {},
-              data: data.reviewTrend.counts
+              areaStyle: {
+                opacity: 0.3
+              },
+              data: data.reviewTrend.counts,
+              itemStyle: {
+                color: '#73c0de'
+              }
             }
           ]
         };
@@ -121,18 +133,20 @@ export default defineComponent({
 
         // 关键词词云图
         const wordCloudOption: EChartsOption = {
-          tooltip: {},
+          tooltip: {
+            show: true
+          },
           series: [{
             type: 'wordCloud',
             shape: 'circle',
             left: 'center',
             top: 'center',
-            width: '70%',
+            width: '80%',
             height: '80%',
             right: null,
             bottom: null,
             sizeRange: [12, 60],
-            rotationRange: [-90, 90],
+            rotationRange: [-45, 45],
             rotationStep: 45,
             gridSize: 8,
             drawOutOfBound: false,
@@ -154,31 +168,34 @@ export default defineComponent({
                 shadowColor: '#333'
               }
             },
-            data: data.keywords.map(item => ({
-              name: item.word,
-              value: item.weight,
-              textStyle: {
-                color: null
-              }
-            }))
+            data: data.keywords
           }]
         };
         wordCloudChart.setOption(wordCloudOption);
 
       } catch (error) {
         message.error('获取数据失败');
+        console.error('Error fetching review analytics:', error);
       }
+    };
+
+    const handleResize = () => {
+      sentimentChart?.resize();
+      trendChart?.resize();
+      wordCloudChart?.resize();
     };
 
     onMounted(() => {
       initCharts();
       fetchData();
+      window.addEventListener('resize', handleResize);
+    });
 
-      window.addEventListener('resize', () => {
-        sentimentChart?.resize();
-        trendChart?.resize();
-        wordCloudChart?.resize();
-      });
+    onBeforeUnmount(() => {
+      window.removeEventListener('resize', handleResize);
+      sentimentChart?.dispose();
+      trendChart?.dispose();
+      wordCloudChart?.dispose();
     });
 
     return {
@@ -193,9 +210,26 @@ export default defineComponent({
 <style scoped>
 .review-analytics {
   padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
 }
 
-h2 {
-  margin-bottom: 24px;
+:deep(.ant-card) {
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+:deep(.ant-card-head) {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 24px;
+}
+
+:deep(.ant-card-head-title) {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+:deep(.ant-page-header) {
+  padding: 16px 0;
 }
 </style> 
