@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from models.user import UserCreate, User, Token
@@ -15,7 +15,7 @@ from bson import ObjectId
 router = APIRouter()
 
 @router.post("/register", response_model=User)
-async def register(user: UserCreate, request: Request):
+async def register(user: UserCreate, request: Request = None):
     # 检查用户名是否已存在
     if await request.app.mongodb["users"].find_one({"username": user.username}):
         raise HTTPException(
