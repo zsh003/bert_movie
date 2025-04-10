@@ -11,14 +11,13 @@ from utils.auth import (
     get_current_admin,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
-from models.activity import Activity
-from database import get_database
+from models.user import Activity
+from database.database import get_database
 from bson import ObjectId
 import os
 import shutil
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @router.post("/register", response_model=User)
 async def register(user: UserCreate, request: Request = None):
@@ -64,10 +63,6 @@ async def login(
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-# @router.get("/me", response_model=User)
-# async def read_users_me(current_user: User = Depends(get_current_user)):
-#     return current_user
-
 @router.get("/users", response_model=list[User])
 async def get_users(
     current_user: User = Depends(get_current_admin),
@@ -78,67 +73,47 @@ async def get_users(
 
 # 获取当前用户信息
 @router.get("/me", response_model=User)
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    db = get_database()
-    user = await db.users.find_one({"token": token})
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-        )
-    return user
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
 
 # 更新用户个人信息
 @router.put("/profile")
-async def update_profile(user_update: UserUpdate, token: str = Depends(oauth2_scheme)):
+async def update_profile(
+    user_update: UserUpdate, 
+    current_user: User = Depends(get_current_user)  # 替换token参数
+):
     db = get_database()
-    user = await db.users.find_one({"token": token})
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-        )
-    
-    update_data = user_update.dict(exclude_unset=True)
-    if update_data:
-        await db.users.update_one(
-            {"_id": user["_id"]},
-            {"$set": update_data}
-        )
-    
+    await db.users.update_one(
+        {"_id": current_user.id},  # 直接使用当前用户ID
+        {"$set": user_update.dict(exclude_unset=True)}
+    )
     return {"message": "Profile updated successfully"}
 
 # 修改密码
 @router.put("/password")
-async def change_password(password_update: PasswordUpdate, token: str = Depends(oauth2_scheme)):
+async def change_password(
+    password_update: PasswordUpdate,
+    current_user: User = Depends(get_current_user)  # 替换token参数
+):
     db = get_database()
-    user = await db.users.find_one({"token": token})
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-        )
+    # 直接使用内存中的当前用户对象验证密码
+    if not verify_password(password_update.currentPassword, current_user.password):
+        raise HTTPException(400, "Current password is incorrect")
     
-    # 验证当前密码
-    if not verify_password(password_update.currentPassword, user["password"]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is incorrect",
-        )
-    
-    # 更新密码
-    hashed_password = get_password_hash(password_update.newPassword)
     await db.users.update_one(
-        {"_id": user["_id"]},
-        {"$set": {"password": hashed_password}}
+        {"_id": current_user.id},
+        {"$set": {"password": get_password_hash(password_update.newPassword)}}
     )
-    
     return {"message": "Password changed successfully"}
 
 # 上传头像
 @router.post("/avatar")
-async def upload_avatar(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
+async def upload_avatar(
+    file: UploadFile = File(...), 
+    current_user: User = Depends(get_current_user) 
+):
     db = get_database()
+    
     user = await db.users.find_one({"token": token})
     if not user:
         raise HTTPException(
@@ -150,10 +125,9 @@ async def upload_avatar(file: UploadFile = File(...), token: str = Depends(oauth
     upload_dir = "static/avatars"
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
-    
-    # 生成文件名
-    file_extension = os.path.splitext(file.filename)[1]
-    filename = f"{user['_id']}{file_extension}"
+
+    # 生成唯一文件名
+    filename = f"{current_user.id}{os.path.splitext(file.filename)[1]}"
     file_path = os.path.join(upload_dir, filename)
     
     # 保存文件
@@ -163,7 +137,7 @@ async def upload_avatar(file: UploadFile = File(...), token: str = Depends(oauth
     # 更新用户头像URL
     avatar_url = f"/static/avatars/{filename}"
     await db.users.update_one(
-        {"_id": user["_id"]},
+        {"_id": current_user.id},
         {"$set": {"avatar": avatar_url}}
     )
     

@@ -17,10 +17,9 @@ async def init_database():
     client = AsyncIOMotorClient(MONGODB_URL)
     db = client[DB_NAME]
     
-    # 初始化电影数据
-    if "movies" not in await db.list_collection_names():
+    if "aqy_movie_reviews" not in await db.list_collection_names():
         print("创建movies集合...")
-        await db.create_collection("movies")
+        await db.create_collection("aqy_movie_reviews")
         
         # 电影数据
         dataset_path = Path(__file__).parent.parent.parent / "dataset" / "aqy_movie_reviews.json"
@@ -38,6 +37,8 @@ async def init_database():
                 await db.movies.create_index([("title", ASCENDING)])
         else:
             print(f"警告：找不到数据文件 {dataset_path}")
+    else:
+        print("电影集合已存在")
     
     # 初始化用户数据
     if "users" in await db.list_collection_names():
@@ -57,7 +58,7 @@ async def init_database():
             "created_at": datetime.now(timezone.utc),
         },
         {
-            "_id": "admin",  # 使用固定ID以便关联
+            "_id": "admin",
             "username": "admin",
             "email": "admin@example.com", 
             "password": get_password_hash("123456"),
