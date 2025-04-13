@@ -32,7 +32,7 @@ async def get_review_analytics(
         }
     ]
     
-    sentiment_results = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
+    sentiment_results = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
     sentiment_distribution = {
         "positive": 0,
         "neutral": 0,
@@ -66,7 +66,7 @@ async def get_review_analytics(
         {"$sort": {"_id": 1}}
     ]
     
-    trend_results = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
+    trend_results = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
     
     # 填充缺失的日期
     date_counts = {result["_id"]: result["count"] for result in trend_results}
@@ -98,7 +98,7 @@ async def get_review_analytics(
         {"$limit": 1000}  # 限制处理最近1000条评论
     ]
     
-    content_results = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
+    content_results = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
     if content_results:
         all_content = " ".join(doc["content"] for doc in content_results)
         keywords = analyse.extract_tags(all_content, topK=50, withWeight=True)
@@ -131,7 +131,7 @@ async def get_movie_analytics(request: Request, current_user: User = Depends(get
         }
     ]
     
-    rating_results = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
+    rating_results = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
     rating_data = {
         "ratings": list(range(1, 6)),
         "counts": [0] * 5
@@ -153,7 +153,7 @@ async def get_movie_analytics(request: Request, current_user: User = Depends(get
         {"$limit": 10}
     ]
     
-    genre_results = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
+    genre_results = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
     genre_data = {
         "genres": [result["_id"] for result in genre_results],
         "counts": [result["count"] for result in genre_results]
@@ -183,7 +183,7 @@ async def get_movie_analytics(request: Request, current_user: User = Depends(get
         {"$sort": {"_id": 1}}
     ]
     
-    trend_results = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
+    trend_results = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
     
     # 填充缺失的月份
     months_data = {result["_id"]: result["count"] for result in trend_results}
@@ -249,7 +249,7 @@ async def get_user_analytics(request: Request, current_user: User = Depends(get_
         {"$sort": {"_id": 1}}
     ]
     
-    activity_results = await request.app.mongodb["aqy_movie_reviews"].aggregate(pipeline).to_list(length=None)
+    activity_results = await request.app.mongodb["movies"].aggregate(pipeline).to_list(length=None)
     
     # 填充缺失的日期
     date_counts = {result["_id"]: result["active_users"] for result in activity_results}
@@ -311,7 +311,7 @@ async def get_user_analytics(request: Request, current_user: User = Depends(get_
     }
 
     # 3. 用户行为分析
-    review_count = await request.app.mongodb["aqy_movie_reviews"].aggregate([
+    review_count = await request.app.mongodb["movies"].aggregate([
         {"$unwind": "$reviews"},
         {"$count": "total"}
     ]).to_list(length=None)

@@ -17,9 +17,12 @@ async def init_database():
     client = AsyncIOMotorClient(MONGODB_URL)
     db = client[DB_NAME]
     
-    if "aqy_movie_reviews" not in await db.list_collection_names():
+    if "movies" in await db.list_collection_names():
+        print("删除现有movies集合...")
+        await db.drop_collection("movies")
+    if "movies" not in await db.list_collection_names():
         print("创建movies集合...")
-        await db.create_collection("aqy_movie_reviews")
+        await db.create_collection("movies")
         
         # 电影数据
         dataset_path = Path(__file__).parent.parent.parent / "dataset" / "aqy_movie_reviews.json"
@@ -29,6 +32,23 @@ async def init_database():
                 movies_data = json.load(f)
             
             if movies_data:
+                # 转换扩展JSON格式
+                for movie in movies_data:
+                    # 处理_id字段
+                    if "_id" in movie and isinstance(movie["_id"], dict) and "$oid" in movie["_id"]:
+                        movie["_id"] = movie["_id"]["$oid"]
+                    # 处理其他可能存在的扩展JSON字段（如日期）
+                    if "created_at" in movie and isinstance(movie["created_at"], dict) and "$date" in movie["created_at"]:
+                        movie["created_at"] = datetime.fromisoformat(movie["created_at"]["$date"])
+                    # 处理movie_id字段
+                    if "movie_id" in movie:
+                        # 处理$numberLong格式
+                        if isinstance(movie["movie_id"], dict) and "$numberLong" in movie["movie_id"]:
+                            movie["movie_id"] = int(movie["movie_id"]["$numberLong"])
+                        # 处理字符串格式数字
+                        elif isinstance(movie["movie_id"], str):
+                            movie["movie_id"] = int(movie["movie_id"])
+
                 await db.movies.insert_many(movies_data)
                 print(f"成功导入 {len(movies_data)} 条电影数据")
                 
@@ -38,7 +58,7 @@ async def init_database():
         else:
             print(f"警告：找不到数据文件 {dataset_path}")
     else:
-        print("电影集合已存在")
+        print("movies集合已存在")
     
     # 初始化用户数据
     if "users" in await db.list_collection_names():
