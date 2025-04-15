@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 # 加载微调后的模型和 Tokenizer
-model_path = "./results_bert_finetune/final_model" # 替换为你保存模型的路径
+model_path = "./results_bert_finetune/final_model"
 try:
     tokenizer = BertTokenizer.from_pretrained(model_path)
     model = BertForSequenceClassification.from_pretrained(model_path)

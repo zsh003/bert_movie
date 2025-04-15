@@ -74,4 +74,4 @@ print("\n处理后的数据示例:")
 print(df[['cleaned_content', 'tokenized_content', 'label' if 'label' in df.columns else 'cleaned_content']].head())
 
 # 保存处理后的数据 (可选)
-# df.to_csv('processed_reviews.csv', index=False)
+df.to_csv('processed_reviews.csv', index=False)

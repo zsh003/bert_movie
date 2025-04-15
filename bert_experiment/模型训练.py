@@ -110,3 +110,10 @@ try:
     print("最终模型已保存。")
 except Exception as e:
     print(f"模型训练过程中发生错误: {e}")
+
+
+import os
+save_path = "./processed_val_dataset"
+os.makedirs(save_path, exist_ok=True)  # 确保目录存在
+val_dataset = val_dataset.flatten()  # 确保数据集格式正确
+val_dataset.save_to_disk(save_path)

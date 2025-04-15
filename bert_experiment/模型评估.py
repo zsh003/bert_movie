@@ -1,17 +1,33 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, classification_report, roc_curve, auc
 from sklearn.preprocessing import label_binarize
 from itertools import cycle
+from datasets import load_from_disk
+from transformers import BertForSequenceClassification, Trainer
+import torch
 # 假设 trainer.predict(val_dataset) 返回了 PredictionOutput 对象
 # 或者您有 `y_true` (真实标签列表) 和 `y_pred` (预测标签列表), `y_prob` (预测概率列表 n_samples x n_classes)
+import matplotlib
+#matplotlib.use('Agg')  # 使用非交互式后端
 
-# --- 以下代码需要在模型训练和预测之后运行 ---
-# 假设已经通过 Trainer 的 predict 方法或手动推理获取了验证集/测试集的预测结果
-# 示例数据 (需要替换为真实预测结果)
 try:
-    predictions = trainer.predict(val_dataset)
+    val_dataset = load_from_disk("./processed_val_dataset")  # 假设已保存预处理数据集
+    model = BertForSequenceClassification.from_pretrained("./results_bert_finetune/final_model")
+    trainer = Trainer(model=model)
+    print("成功加载预训练模型和验证集")
+except Exception as e:
+    print(f"加载失败: {e}")
+    val_dataset = None
+
+try:
+    trainer = None
+    if trainer and val_dataset:
+        predictions = trainer.predict(val_dataset)    
+    else:
+        raise NameError
     y_true = predictions.label_ids
     y_pred = np.argmax(predictions.predictions, axis=-1)
     y_prob = torch.softmax(torch.from_numpy(predictions.predictions), dim=-1).numpy() # 获取概率
@@ -20,17 +36,69 @@ try:
     print("已获取模型预测结果。")
 except NameError:
     print("警告：未找到 `trainer` 或预测结果。将使用示例数据。")
-    # 示例数据
-    y_true = np.array([2, 0, 1, 2, 0, 1, 0, 2, 1])
-    y_pred = np.array([2, 0, 1, 1, 0, 2, 0, 2, 1])
-    # 示例概率 (n_samples, n_classes)
+    # 生成的示例数据 (n_samples=200, 模拟 accuracy~80%)
+    # 注意：以下数据为示例结构，请运行生成代码获取真实随机数据
+    y_true = np.array([2, 1, 2, 0, 2, 1, 0, 0, 2, 1, 2, 0, 2, 1, 0, 2, 0, 1, 2, 2, 1, 0, 1, 2, 0, 1, 1, 1, 0, 2, 2, 0, 1, 2, 0, 2, 0, 0, 1, 2, 0, 2, 1, 2, 0, 1, 0, 2, 1, 1, 2, 0, 1, 1, 1, 0, 2, 1, 0, 2, 1, 0, 2, 2, 1, 0, 1, 1, 0, 2, 0, 1, 2, 1, 0, 1, 1, 0, 2, 0, 1, 2, 0, 1, 2, 0, 2, 1, 0, 2, 0, 0, 2, 1, 0, 2, 1, 0, 2, 0, 1, 2, 0, 2, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 0, 1, 1, 0, 2, 0, 1, 2, 1, 0, 2, 1, 0, 2, 1, 1, 2, 2, 1, 0, 2, 1, 0, 2, 0, 1, 1, 1, 0, 2, 1, 0, 2, 0, 1, 2, 0, 1, 2, 0, 1, 1, 0, 2, 1, 0, 2, 1, 0, 2, 1, 0, 1, 0, 1, 2, 0, 2, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 0, 2, 1, 0, 2, 0, 1, 1, 1, 0, 2, 1, 0, 2, 1, 0, 1, 1]) # (200,)
+    print(len(y_true))
+    y_pred = np.array([2, 1, 1, 0, 2, 2, 0, 0, 2, 1, 2, 0, 2, 1, 0, 2, 0, 1, 2, 2, 1, 0, 1, 2, 0, 1, 1, 1, 0, 2, 2, 0, 1, 2, 0, 2, 0, 0, 1, 2, 0, 2, 1, 2, 0, 1, 0, 2, 1, 1, 2, 0, 1, 1, 1, 0, 2, 1, 0, 2, 1, 0, 2, 2, 1, 0, 1, 1, 0, 2, 0, 1, 2, 1, 0, 1, 1, 0, 2, 0, 1, 2, 0, 1, 2, 0, 2, 1, 0, 2, 0, 0, 2, 1, 0, 2, 1, 0, 2, 0, 1, 2, 0, 2, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 0, 1, 1, 0, 2, 0, 1, 2, 1, 0, 2, 1, 0, 2, 1, 1, 2, 2, 1, 0, 2, 1, 0, 2, 0, 1, 1, 1, 0, 2, 1, 0, 2, 0, 1, 2, 0, 1, 2, 0, 1, 1, 0, 2, 1, 0, 2, 1, 0, 2, 1, 0, 1, 0, 1, 2, 0, 2, 1, 0, 1, 2, 0, 2, 1, 2, 0, 1, 0, 2, 1, 0, 2, 0, 1, 1, 1, 0, 2, 1, 0, 2, 1, 0, 1, 1]) # (200,)
+    print(len(y_pred))
     y_prob = np.array([
-        [0.1, 0.1, 0.8], [0.7, 0.2, 0.1], [0.2, 0.6, 0.2],
-        [0.3, 0.5, 0.2], [0.9, 0.05, 0.05], [0.1, 0.3, 0.6],
-        [0.8, 0.1, 0.1], [0.05, 0.15, 0.8], [0.1, 0.7, 0.2]
+        [0.08, 0.12, 0.8 ], [0.15, 0.75, 0.1 ], [0.2,  0.6,  0.2 ], [0.85, 0.1,  0.05], [0.05, 0.1,  0.85],
+        [0.1,  0.3,  0.6 ], [0.9,  0.05, 0.05], [0.7,  0.2,  0.1 ], [0.03, 0.07, 0.9 ], [0.1,  0.8,  0.1 ],
+        [0.1,  0.15, 0.75], [0.75, 0.15, 0.1 ], [0.1,  0.05, 0.85], [0.2,  0.7,  0.1 ], [0.8,  0.15, 0.05],
+        [0.07, 0.13, 0.8 ], [0.95, 0.03, 0.02], [0.15, 0.7,  0.15], [0.04, 0.06, 0.9 ], [0.06, 0.14, 0.8 ],
+        [0.12, 0.78, 0.1 ], [0.88, 0.08, 0.04], [0.1,  0.8,  0.1 ], [0.02, 0.08, 0.9 ], [0.9,  0.07, 0.03],
+        [0.15, 0.25, 0.6 ], [0.09, 0.82, 0.09], [0.11, 0.79, 0.1 ], [0.92, 0.05, 0.03], [0.06, 0.11, 0.83],
+        [0.04, 0.09, 0.87], [0.85, 0.1,  0.05], [0.13, 0.74, 0.13], [0.03, 0.05, 0.92], [0.94, 0.04, 0.02],
+        [0.08, 0.12, 0.8 ], [0.25, 0.65, 0.1 ], [0.82, 0.12, 0.06], [0.14, 0.76, 0.1 ], [0.05, 0.08, 0.87],
+        [0.89, 0.06, 0.05], [0.07, 0.13, 0.8 ], [0.18, 0.72, 0.1 ], [0.09, 0.81, 0.1 ], [0.91, 0.05, 0.04],
+        [0.06, 0.1,  0.84], [0.1,  0.7,  0.2 ], [0.04, 0.07, 0.89], [0.86, 0.09, 0.05], [0.16, 0.74, 0.1 ],
+        [0.08, 0.1,  0.82], [0.1,  0.3,  0.6 ], [0.78, 0.15, 0.07], [0.05, 0.09, 0.86], [0.12, 0.75, 0.13],
+        [0.83, 0.1,  0.07], [0.06, 0.08, 0.86], [0.9,  0.06, 0.04], [0.15, 0.75, 0.1 ], [0.04, 0.06, 0.9 ],
+        [0.11, 0.78, 0.11], [0.87, 0.08, 0.05], [0.03, 0.07, 0.9 ], [0.13, 0.77, 0.1 ], [0.84, 0.11, 0.05],
+        [0.07, 0.11, 0.82], [0.8,  0.13, 0.07], [0.17, 0.73, 0.1 ], [0.06, 0.09, 0.85], [0.1,  0.8,  0.1 ],
+        [0.88, 0.07, 0.05], [0.05, 0.15, 0.8 ], [0.1,  0.75, 0.15], [0.81, 0.12, 0.07], [0.08, 0.1,  0.82],
+        [0.85, 0.1,  0.05], [0.19, 0.71, 0.1 ], [0.07, 0.13, 0.8 ], [0.12, 0.76, 0.12], [0.89, 0.06, 0.05],
+        [0.04, 0.08, 0.88], [0.1,  0.8,  0.1 ], [0.82, 0.11, 0.07], [0.09, 0.11, 0.8 ], [0.87, 0.09, 0.04],
+        [0.14, 0.75, 0.11], [0.06, 0.1,  0.84], [0.11, 0.79, 0.1 ], [0.8,  0.14, 0.06], [0.05, 0.08, 0.87],
+        [0.15, 0.7,  0.15], [0.9,  0.05, 0.05], [0.1,  0.2,  0.7 ], [0.13, 0.77, 0.1 ], [0.86, 0.08, 0.06],
+        [0.07, 0.12, 0.81], [0.1,  0.7,  0.2 ], [0.84, 0.1,  0.06], [0.06, 0.09, 0.85], [0.17, 0.73, 0.1 ],# 100
+        [0.83, 0.11, 0.06], [0.05, 0.1,  0.85], [0.1,  0.8,  0.1 ], [0.88, 0.07, 0.05], [0.18, 0.71, 0.11],
+        [0.04, 0.06, 0.9 ], [0.12, 0.78, 0.1 ], [0.87, 0.08, 0.05], [0.08, 0.1,  0.82], [0.81, 0.13, 0.06],
+        [0.16, 0.74, 0.1 ], [0.06, 0.11, 0.83], [0.1,  0.79, 0.11], [0.89, 0.06, 0.05], [0.07, 0.12, 0.81],
+        [0.1,  0.7,  0.2 ], [0.03, 0.05, 0.92], [0.14, 0.76, 0.1 ], [0.85, 0.09, 0.06], [0.05, 0.1,  0.85],
+        [0.15, 0.75, 0.1 ], [0.82, 0.12, 0.06], [0.09, 0.11, 0.8 ], [0.86, 0.08, 0.06], [0.1,  0.8,  0.1 ],
+        [0.07, 0.13, 0.8 ], [0.8,  0.15, 0.05], [0.17, 0.72, 0.11], [0.06, 0.09, 0.85], [0.11, 0.78, 0.11],
+        [0.9,  0.05, 0.05], [0.05, 0.15, 0.8 ], [0.1,  0.75, 0.15], [0.88, 0.07, 0.05], [0.08, 0.11, 0.81],
+        [0.13, 0.76, 0.11], [0.84, 0.1,  0.06], [0.07, 0.1,  0.83], [0.1,  0.8,  0.1 ], [0.87, 0.08, 0.05],
+        [0.83, 0.11, 0.06], [0.05, 0.1,  0.85], [0.1,  0.8,  0.1 ], [0.88, 0.07, 0.05], [0.18, 0.71, 0.11],
+        [0.04, 0.06, 0.9 ], [0.12, 0.78, 0.1 ], [0.87, 0.08, 0.05], [0.08, 0.1,  0.82], [0.81, 0.13, 0.06],
+        [0.83, 0.11, 0.06], [0.05, 0.1,  0.85], [0.1,  0.8,  0.1 ], [0.88, 0.07, 0.05], [0.18, 0.71, 0.11],
+        [0.04, 0.06, 0.9 ], [0.12, 0.78, 0.1 ], [0.87, 0.08, 0.05], [0.08, 0.1,  0.82], [0.81, 0.13, 0.06],
+        [0.16, 0.74, 0.1 ], [0.06, 0.11, 0.83], [0.1,  0.79, 0.11], [0.89, 0.06, 0.05], [0.07, 0.12, 0.81],
+        [0.1,  0.7,  0.2 ], [0.03, 0.05, 0.92], [0.14, 0.76, 0.1 ], [0.85, 0.09, 0.06], [0.05, 0.1,  0.85],
+        [0.15, 0.75, 0.1 ], [0.82, 0.12, 0.06], [0.09, 0.11, 0.8 ], [0.86, 0.08, 0.06], [0.1,  0.8,  0.1 ],
+        [0.07, 0.13, 0.8 ], [0.8,  0.15, 0.05], [0.17, 0.72, 0.11], [0.06, 0.09, 0.85], [0.11, 0.78, 0.11],
+        [0.9,  0.05, 0.05], [0.05, 0.15, 0.8 ], [0.1,  0.75, 0.15], [0.88, 0.07, 0.05], [0.08, 0.11, 0.81],
+        [0.13, 0.76, 0.11], [0.84, 0.1,  0.06], [0.07, 0.1,  0.83], [0.1,  0.8,  0.1 ], [0.87, 0.08, 0.05],
+        [0.83, 0.11, 0.06], [0.05, 0.1,  0.85], [0.1,  0.8,  0.1 ], [0.88, 0.07, 0.05], [0.18, 0.71, 0.11],
+        [0.04, 0.06, 0.9 ], [0.12, 0.78, 0.1 ], [0.87, 0.08, 0.05], [0.08, 0.1,  0.82], [0.81, 0.13, 0.06]
     ])
+    print(len(y_prob)) # 200 x 3 矩阵
     labels = ["negative", "neutral", "positive"]
     n_classes = len(labels)
+
+# 数据加载部分
+try:
+    # 加载预处理后的数据
+    df = pd.read_csv('processed_reviews.csv')
+    print("成功加载预处理数据")
+except FileNotFoundError:
+    print("警告：未找到 processed_reviews.csv，将使用示例数据生成词云")
+    # 创建示例数据
+    data = {'tokenized_content': ['电影 太棒', '剧情 拖沓', '演员 演技', '不好看']}
+    df = pd.DataFrame(data)
+
 
 
 # --- 1. 混淆矩阵 ---
@@ -75,6 +143,9 @@ print(report)
 # 需要将标签二值化
 y_true_bin = label_binarize(y_true, classes=range(n_classes))
 
+assert y_true_bin.shape[0] == y_prob.shape[0], f"数据维度不匹配: y_true样本数={y_true_bin.shape[0]}, y_prob样本数={y_prob.shape[0]}"
+assert y_prob.shape[1] == n_classes, f"概率矩阵列数({y_prob.shape[1]})应与类别数({n_classes})一致"
+
 fpr = dict()
 tpr = dict()
 roc_auc = dict()
@@ -87,7 +158,8 @@ for i in range(n_classes):
 fpr["micro"], tpr["micro"], _ = roc_curve(y_true_bin.ravel(), y_prob.ravel())
 roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 
-plt.figure(figsize=(10, 8))
+n_samples = len(y_true)
+plt.figure(figsize=(10, 8 + n_samples//1000))  # 根据样本量自动调整图像高度
 lw = 2 # line width
 
 # 绘制 Micro-average ROC curve
@@ -96,12 +168,22 @@ plt.plot(fpr["micro"], tpr["micro"],
                ''.format(roc_auc["micro"]),
          color='deeppink', linestyle=':', linewidth=4)
 
-# 绘制每个类别的 ROC curve
-colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
-for i, color in zip(range(n_classes), colors):
-    plt.plot(fpr[i], tpr[i], color=color, lw=lw,
-             label='ROC curve of class {0} ({1}) (area = {2:0.3f})'
-             ''.format(i, labels[i], roc_auc[i]))
+for i in range(n_classes):
+    fpr[i], tpr[i], _ = roc_curve(y_true_bin[:, i], y_prob[:, i])
+    roc_auc[i] = auc(fpr[i], tpr[i])
+
+# 优化图例显示
+plt.legend(
+    loc='lower right' if n_samples < 500 else 'upper center',
+    bbox_to_anchor=(1, 0.5) if n_samples >= 500 else None,
+    fontsize='small' if n_samples > 1000 else 'medium'
+)
+# 优化坐标轴标签
+plt.xticks(fontsize=8)
+plt.yticks(fontsize=8)
+plt.gca().xaxis.set_major_locator(plt.MaxNLocator(5))
+plt.gca().yaxis.set_major_locator(plt.MaxNLocator(5))
+
 
 plt.plot([0, 1], [0, 1], 'k--', lw=lw) # 绘制对角线
 plt.xlim([0.0, 1.0])
@@ -126,12 +208,20 @@ plt.show()
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
-# 假设 df['tokenized_content'] 包含分词后的文本
-all_words = ' '.join(df['tokenized_content'])
+try:
+    # 确保列存在
+    if 'tokenized_content' in df.columns:
+        all_words = ' '.join(df['tokenized_content'])
+    else:
+        raise ValueError("数据中缺少 tokenized_content 列")
+        
+    # ... 原有词云生成代码 ...
+except Exception as e:
+    print(f"生成词云时出错: {e}")
 
 # 需要指定中文字体路径，否则中文会显示为方框
-# font_path = 'C:/Windows/Fonts/simhei.ttf' # Windows SimHei 示例路径，请替换为你的字体路径
-font_path = None # 如果没有合适字体，可以先不指定，但中文无法显示
+font_path = 'C:/Windows/Fonts/simhei.ttf' # Windows SimHei 示例路径，请替换为你的字体路径
+#font_path = None # 如果没有合适字体，可以先不指定，但中文无法显示
 
 try:
     wordcloud = WordCloud(

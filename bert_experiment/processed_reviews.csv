@@ -1,0 +1,5 @@
+review_id,content,raw_sentiment,cleaned_content,tokenized_content,label
+1,这部电影太棒了！,positive,这部电影太棒了,这部 电影 太棒了,2
+2,剧情有点拖沓。,negative,剧情有点拖沓,剧情 有点 拖沓,0
+4,演员演技在线！,positive,演员演技在线,演员 演技 在线,2
+5,不好看。,negative,不好看,不 好看,0
