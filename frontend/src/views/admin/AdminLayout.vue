@@ -21,6 +21,14 @@
           <template #icon><user-outlined /></template>
           用户分析
         </a-menu-item>
+        <a-menu-item key="movie-management" @click="$router.push('/admin/movie-management')">
+          <template #icon><video-camera-outlined /></template>
+          电影管理
+        </a-menu-item>
+        <a-menu-item key="review-management" @click="$router.push('/admin/review-management')">
+          <template #icon><comment-outlined /></template>
+          评论管理
+        </a-menu-item>
       </a-menu>
     </a-layout-sider>
     <a-layout>
@@ -49,7 +57,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue';
+import { defineComponent, ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import {
@@ -72,7 +80,22 @@ export default defineComponent({
     const route = useRoute();
     const userStore = useUserStore();
 
-    const selectedKeys = ref<string[]>([route.name as string]);
+    const selectedKeys = ref<string[]>([]);
+
+    watch(
+      () => route.path,
+      (path) => {
+        const key = path.split('/').pop();
+        if (key) {
+          if (key === 'reviews') selectedKeys.value = ['review-analytics'];
+          else if (key === 'movies') selectedKeys.value = ['movie-analytics'];
+          else if (key === 'users') selectedKeys.value = ['user-analytics'];
+          else if (key === 'movie-management') selectedKeys.value = ['movie-management'];
+          else if (key === 'review-management') selectedKeys.value = ['review-management'];
+        }
+      },
+      { immediate: true }
+    );
 
     const handleLogout = async () => {
       await userStore.logout();

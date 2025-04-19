@@ -49,7 +49,7 @@ export default defineComponent({
     const fetchActivities = async () => {
       loading.value = true;
       try {
-        const response = await axios.get('/api/users/activities');
+        const response = await axios.get('http://localhost:8000/api/users/activities');
         activities.value = response.data;
       } catch (error) {
         message.error('获取动态失败');

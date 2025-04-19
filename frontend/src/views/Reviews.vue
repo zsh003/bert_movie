@@ -53,7 +53,7 @@ export default defineComponent({
     const fetchReviews = async () => {
       loading.value = true;
       try {
-        const response = await axios.get('/api/reviews/user/me');
+        const response = await axios.get('http://localhost:8000/api/reviews/user/me');
         reviews.value = response.data;
       } catch (error) {
         message.error('获取评论失败');

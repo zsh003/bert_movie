@@ -8,7 +8,15 @@
       :columns="columns"
       :data-source="reviews"
       :loading="loading"
-      :pagination="{ pageSize: 10 }"
+      :pagination="{
+        current: current,
+        pageSize: pageSize,
+        total: total,
+        showSizeChanger: true,
+        pageSizeOptions: ['10', '20', '50'],
+        showTotal: (total) => `共 ${total} 条记录`
+      }"
+      @change="handleTableChange"
       rowKey="_id"
     >
       <template #bodyCell="{ column, record }">
@@ -58,8 +66,9 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
 import { message } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
+import type { TableColumnsType, TablePaginationConfig } from 'ant-design-vue';
 import axios from 'axios';
+import { useUserStore } from '../../stores/user'
 
 interface ReviewData {
   _id: string;
@@ -75,6 +84,7 @@ interface ReviewData {
 export default defineComponent({
   name: 'ReviewManagement',
   setup() {
+    const userStore = useUserStore();
     const reviews = ref<ReviewData[]>([]);
     const loading = ref(false);
     const modalVisible = ref(false);
@@ -85,6 +95,11 @@ export default defineComponent({
       content: '',
       sentiment: ''
     });
+    
+    // 分页相关状态
+    const current = ref(1);
+    const pageSize = ref(10);
+    const total = ref(0);
 
     const columns: TableColumnsType = [
       {
@@ -125,15 +140,44 @@ export default defineComponent({
       sentiment: [{ required: true, message: '请选择情感倾向' }]
     };
 
-    const fetchReviews = async () => {
+    const fetchReviews = async (page = 1, size = 10) => {
       loading.value = true;
       try {
-        const response = await axios.get('/api/reviews/all');
-        reviews.value = response.data;
+        // 使用后端reviews/all接口获取数据
+        const response = await axios.get('http://localhost:8000/api/reviews/all', {
+          params: {
+            skip: (page - 1) * size,
+            limit: size
+          },
+          headers: {
+            Authorization: `Bearer ${userStore.token}`
+          }
+        });
+        
+        if (response.data && response.data.data) {
+          reviews.value = response.data.data;
+          total.value = response.data.total || 0;
+        } else {
+          // 如果接口不返回预期格式，尝试直接使用数据
+          reviews.value = Array.isArray(response.data) ? response.data : [];
+          total.value = reviews.value.length;
+        }
       } catch (error) {
+        console.error('获取评论数据失败:', error);
         message.error('获取评论数据失败');
+        
+        // 如果接口失败，尝试使用模拟数据（仅用于调试）
+        reviews.value = [];
+        total.value = 0;
       }
       loading.value = false;
+    };
+    
+    // 处理表格分页变化
+    const handleTableChange = (pagination: TablePaginationConfig) => {
+      current.value = pagination.current || 1;
+      pageSize.value = pagination.pageSize || 10;
+      fetchReviews(current.value, pageSize.value);
     };
 
     const showEditModal = (record: ReviewData) => {
@@ -150,15 +194,20 @@ export default defineComponent({
         await formRef.value.validate();
         modalLoading.value = true;
 
-        await axios.put(`/api/reviews/${formData.value._id}`, {
+        await axios.put(`http://localhost:8000/api/reviews/${formData.value._id}`, {
           content: formData.value.content,
           sentiment: formData.value.sentiment
+        }, {
+          headers: {
+            Authorization: `Bearer ${userStore.token}`
+          }
         });
         
         message.success('更新成功');
         modalVisible.value = false;
-        fetchReviews();
+        fetchReviews(current.value, pageSize.value);
       } catch (error) {
+        console.error('更新失败:', error);
         message.error('更新失败');
       } finally {
         modalLoading.value = false;
@@ -171,10 +220,20 @@ export default defineComponent({
 
     const handleDelete = async (id: string) => {
       try {
-        await axios.delete(`/api/reviews/${id}`);
+        await axios.delete(`http://localhost:8000/api/reviews/${id}`, {
+          headers: {
+            Authorization: `Bearer ${userStore.token}`
+          }
+        });
         message.success('删除成功');
-        fetchReviews();
+        
+        // 如果当前页只有一条数据且不是第一页，删除后跳转到上一页
+        if (reviews.value.length === 1 && current.value > 1) {
+          current.value -= 1;
+        }
+        fetchReviews(current.value, pageSize.value);
       } catch (error) {
+        console.error('删除失败:', error);
         message.error('删除失败');
       }
     };
@@ -198,7 +257,7 @@ export default defineComponent({
     };
 
     onMounted(() => {
-      fetchReviews();
+      fetchReviews(current.value, pageSize.value);
     });
 
     return {
@@ -210,10 +269,14 @@ export default defineComponent({
       formRef,
       formData,
       rules,
+      current,
+      pageSize,
+      total,
       showEditModal,
       handleModalOk,
       handleModalCancel,
       handleDelete,
+      handleTableChange,
       getSentimentColor,
       getSentimentText
     };

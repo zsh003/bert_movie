@@ -29,6 +29,8 @@ import axios from 'axios';
 import * as echarts from 'echarts';
 import 'echarts-wordcloud';
 import type { EChartsOption } from 'echarts';
+import { useUserStore } from '../../stores/user'
+const userStore = useUserStore()
 
 export default defineComponent({
   name: 'ReviewAnalytics',
@@ -54,7 +56,11 @@ export default defineComponent({
 
     const fetchData = async () => {
       try {
-        const { data } = await axios.get('/api/analytics/reviews');
+        const { data } = await axios.get('http://localhost:8000/api/analytics/reviews', {
+          headers: {
+            'Authorization': `Bearer ${userStore.token}`
+          }
+        });
         
         // 情感分布饼图
         const sentimentOption: EChartsOption = {

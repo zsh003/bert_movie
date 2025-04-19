@@ -58,3 +58,53 @@ async def delete_review(
     
     await db.reviews.delete_one({"_id": review_id})
     return {"message": "评论已删除"} 
+
+# backend/routers/reviews.py 添加新接口
+
+@router.get("/all", response_model=List[dict])
+async def get_all_reviews(
+    skip: int = 0, 
+    limit: int = 20,
+    current_user: User = Depends(get_current_user)
+):
+    # 检查用户是否为管理员
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="只有管理员可以访问所有评论"
+        )
+    
+    db = get_database()
+    # 获取评论总数
+    total = await db.reviews.count_documents({})
+    
+    # 聚合查询，关联电影信息
+    pipeline = [
+        {"$sort": {"created_at": -1}},
+        {"$skip": skip},
+        {"$limit": limit},
+        {"$lookup": {
+            "from": "movies",
+            "localField": "movie_id",
+            "foreignField": "movie_id",
+            "as": "movie_info"
+        }},
+        {"$unwind": {"path": "$movie_info", "preserveNullAndEmptyArrays": True}},
+        {"$project": {
+            "_id": 1,
+            "user_id": 1,
+            "movie_id": 1,
+            "content": 1,
+            "sentiment": 1,
+            "created_at": 1,
+            "username": 1,
+            "movie_title": "$movie_info.title"
+        }}
+    ]
+    
+    reviews = await db.reviews.aggregate(pipeline).to_list(None)
+    
+    return {
+        "total": total,
+        "data": reviews
+    }

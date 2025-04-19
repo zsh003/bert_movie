@@ -50,7 +50,7 @@ export default defineComponent({
     const fetchFavorites = async () => {
       loading.value = true;
       try {
-        const response = await axios.get('/api/favorites');
+        const response = await axios.get('http://localhost:8000/api/favorites');
         favorites.value = response.data;
       } catch (error) {
         message.error('获取收藏失败');

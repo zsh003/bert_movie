@@ -48,7 +48,8 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/admin',
     name: 'Admin',
-    component: Admin,
+    //component: Admin,
+    component: () => import('../views/admin/AdminLayout.vue'),
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
       {
@@ -65,6 +66,16 @@ const routes: Array<RouteRecordRaw> = [
         path: 'users',
         name: 'user-analytics',
         component: () => import('../views/admin/UserAnalytics.vue')
+      },
+      {
+        path: 'movie-management',
+        name: 'movie-management',
+        component: () => import('../views/admin/MovieManagement.vue')
+      },
+      {
+        path: 'review-management',
+        name: 'review-management',
+        component: () => import('../views/admin/ReviewManagement.vue')
       }
     ]
   },

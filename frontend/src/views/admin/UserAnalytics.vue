@@ -28,6 +28,8 @@ import { message } from 'ant-design-vue';
 import axios from 'axios';
 import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
+import { useUserStore } from '../../stores/user'
+const userStore = useUserStore()
 
 export default defineComponent({
   name: 'UserAnalytics',
@@ -53,7 +55,11 @@ export default defineComponent({
 
     const fetchData = async () => {
       try {
-        const { data } = await axios.get('/api/analytics/users');
+        const { data } = await axios.get('http://localhost:8000/api/analytics/users', {
+          headers: {
+            'Authorization': `Bearer ${userStore.token}`
+          },
+        });
         
         // 用户活跃度热力图
         const activityOption: EChartsOption = {
