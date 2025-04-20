@@ -61,7 +61,7 @@ async def delete_review(
 
 # backend/routers/reviews.py 添加新接口
 
-@router.get("/all", response_model=List[dict])
+@router.get("/all", response_model=dict)
 async def get_all_reviews(
     skip: int = 0, 
     limit: int = 20,
@@ -80,9 +80,6 @@ async def get_all_reviews(
     
     # 聚合查询，关联电影信息
     pipeline = [
-        {"$sort": {"created_at": -1}},
-        {"$skip": skip},
-        {"$limit": limit},
         {"$lookup": {
             "from": "movies",
             "localField": "movie_id",
@@ -90,6 +87,7 @@ async def get_all_reviews(
             "as": "movie_info"
         }},
         {"$unwind": {"path": "$movie_info", "preserveNullAndEmptyArrays": True}},
+        {"$sort": {"created_at": -1}},
         {"$project": {
             "_id": 1,
             "user_id": 1,
@@ -99,12 +97,19 @@ async def get_all_reviews(
             "created_at": 1,
             "username": 1,
             "movie_title": "$movie_info.title"
-        }}
+        }},
+        {
+            "$facet": {
+                "metadata": [{"$count": "total"}],
+                "data": [{"$skip": skip}, {"$limit": limit}]
+            }
+        },
+        {"$unwind": "$metadata"}
     ]
     
-    reviews = await db.reviews.aggregate(pipeline).to_list(None)
+    result = await db.reviews.aggregate(pipeline).to_list(None)
     
     return {
-        "total": total,
-        "data": reviews
+        "total": result[0]["metadata"]["total"] if result else 0,
+        "data": result[0]["data"] if result else []
     }
