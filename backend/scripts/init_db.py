@@ -17,9 +17,9 @@ async def init_database():
     client = AsyncIOMotorClient(MONGODB_URL)
     db = client[DB_NAME]
     
-    if "movies" in await db.list_collection_names():
-        print("删除现有movies集合...")
-        await db.drop_collection("movies")
+    # if "movies" in await db.list_collection_names():
+    #     print("删除现有movies集合...")
+    #     await db.drop_collection("movies")
     if "movies" not in await db.list_collection_names():
         print("创建movies集合...")
         await db.create_collection("movies")
@@ -61,35 +61,36 @@ async def init_database():
         print("movies集合已存在")
     
     # 初始化用户数据
-    if "users" in await db.list_collection_names():
-        print("删除现有users集合...")
-        await db.drop_collection("users")
+    # if "users" in await db.list_collection_names():
+    #     print("删除现有users集合...")
+    #     await db.drop_collection("users")
     
-    print("创建users集合...")
-    await db.create_collection("users")
+    if "users" not in await db.list_collection_names():
+        print("创建users集合...")
+        await db.create_collection("users")
     
-    users = [
-        {
-            "user_id": "1",
-            "username": "user",
-            "email": "user@example.com",
-            "password": get_password_hash("123456"),
-            "is_admin": False,
-            "created_at": datetime.now(timezone.utc),
-        },
-        {
-            "user_id": "2",
-            "username": "admin",
-            "email": "admin@example.com", 
-            "password": get_password_hash("123456"),
-            "is_admin": True,
-            "created_at": datetime.now(timezone.utc),
-        }
-    ]
-    
-    await db.users.insert_many(users)
-    await db.users.create_index([("username", ASCENDING)], unique=True)
-    await db.users.create_index([("email", ASCENDING)], unique=True)
+        users = [
+            {
+                "user_id": "1",
+                "username": "user",
+                "email": "user@example.com",
+                "password": get_password_hash("123456"),
+                "is_admin": False,
+                "created_at": datetime.now(timezone.utc),
+            },
+            {
+                "user_id": "2",
+                "username": "admin",
+                "email": "admin@example.com", 
+                "password": get_password_hash("123456"),
+                "is_admin": True,
+                "created_at": datetime.now(timezone.utc),
+            }
+        ]
+        
+        await db.users.insert_many(users)
+        await db.users.create_index([("username", ASCENDING)], unique=True)
+        await db.users.create_index([("email", ASCENDING)], unique=True)
     
     # 初始化评论数据
     if "reviews" in await db.list_collection_names():

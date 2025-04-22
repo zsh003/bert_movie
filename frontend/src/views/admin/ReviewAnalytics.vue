@@ -137,10 +137,16 @@ export default defineComponent({
         };
         trendChart.setOption(trendOption);
 
+        const cloudData = data.keywords.map(item => ({
+            name: item.word,
+            value: item.weight
+        }));
         // 关键词词云图
         const wordCloudOption: EChartsOption = {
           tooltip: {
-            show: true
+            show: true,
+            formatter: (params: any) => 
+              `${params.name}: ${params.value}%`
           },
           series: [{
             type: 'wordCloud',
@@ -174,7 +180,7 @@ export default defineComponent({
                 shadowColor: '#333'
               }
             },
-            data: data.keywords
+            data: cloudData
           }]
         };
         wordCloudChart.setOption(wordCloudOption);
