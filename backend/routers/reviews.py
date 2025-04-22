@@ -39,7 +39,29 @@ async def get_movie_reviews(movie_id: int):
 @router.get("/user/me", response_model=List[dict])
 async def get_my_reviews(current_user: User = Depends(get_current_user)):
     db = get_database()
-    reviews = await db.reviews.find({"user_id": str(current_user.user_id)}).sort("created_at", -1).to_list(None)
+    pipeline = [
+        {"$match": {"user_id": str(current_user.user_id)}},
+        {"$lookup": {
+            "from": "movies",
+            "localField": "movie_id",
+            "foreignField": "movie_id",
+            "as": "movie_info"
+        }},
+        {"$unwind": {"path": "$movie_info", "preserveNullAndEmptyArrays": True}},
+        {"$sort": {"created_at": -1}},
+        {"$project": {
+            "_id": 1,
+            "content": 1,
+            "sentiment": 1,
+            "created_at": 1,
+            "movie_id": 1,
+            "movie_title": "$movie_info.title",
+            "movie_img": "$movie_info.img.content",  # 添加电影图片字段
+            "username": 1
+        }}
+    ]
+    
+    reviews = await db.reviews.aggregate(pipeline).to_list(None)
     return reviews
 
 @router.delete("/{review_id}")

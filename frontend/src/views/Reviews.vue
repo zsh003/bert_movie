@@ -8,31 +8,51 @@
     >
       <template #renderItem="{ item }">
         <a-list-item>
-          <template #extra>
-            <img
-              width="272"
-              alt="电影海报"
-              :src="item.movie_poster"
-            />
-          </template>
-          <a-list-item-meta
-            :description="formatDate(item.created_at)"
-          >
-            <template #title>
-              <router-link :to="'/movie/' + item.movie_id">{{ item.movie_title }}</router-link>
+          <a-card hoverable>
+            <div style="display: flex; gap: 20px;">
+              <!-- 左侧内容 -->
+              <div style="flex: 1;">
+                <a-card-meta>
+                  <template #title>
+                    <router-link 
+                      :to="'/movie/' + item.movie_id"
+                      style="font-size: 18px; font-weight: 500;"
+                    >
+                      {{ item.movie_title }}
+                    </router-link>
+                    <span style="margin-left: 12px; color: #888; font-size: 12px;">
+                      {{ formatDate(item.created_at) }}
+                    </span>
+                  </template>
+                </a-card-meta>
+
+                <div class="review-content">
+                  <p style="margin: 12px 0; font-size: 14px; line-height: 1.6;">{{ item.content }}</p>
+                  <a-tag 
+                    :color="getSentimentColor(item.sentiment)"
+                    style="margin-bottom: 12px;"
+                  >
+                    {{ getSentimentText(item.sentiment) }}
+                  </a-tag>
+                </div>
+              </div>
+
+              <!-- 右侧海报 -->
+              <div v-if="item.movie_img" style="width: 200px;">
+                <img 
+                  :src="'data:image/webp;base64,' + item.movie_img"
+                  style="width: 100%; height: 150px; object-fit: cover; border-radius: 4px;"
+                />
+              </div>
+            </div>
+
+            <!-- 操作按钮移动到卡片底部 -->
+            <template #actions>
+              <a-button type="link" danger @click="deleteReview(item._id)">
+                删除评论
+              </a-button>
             </template>
-          </a-list-item-meta>
-          <div class="review-content">
-            <p>{{ item.content }}</p>
-            <a-tag :color="getSentimentColor(item.sentiment)">
-              {{ getSentimentText(item.sentiment) }}
-            </a-tag>
-          </div>
-          <template #actions>
-            <a-button type="link" danger @click="deleteReview(item._id)">
-              删除评论
-            </a-button>
-          </template>
+          </a-card>
         </a-list-item>
       </template>
     </a-list>
@@ -43,6 +63,7 @@
 import { defineComponent, ref, onMounted } from 'vue';
 import { message } from 'ant-design-vue';
 import axios from 'axios';
+import { useUserStore } from '../stores/user'
 
 export default defineComponent({
   name: 'ReviewsPage',
@@ -53,7 +74,9 @@ export default defineComponent({
     const fetchReviews = async () => {
       loading.value = true;
       try {
-        const response = await axios.get('http://localhost:8000/api/reviews/user/me');
+        const response = await axios.get('http://localhost:8000/api/reviews/user/me',
+          { headers: { 'Authorization': `Bearer ${useUserStore().token}` } }
+        );
         reviews.value = response.data;
       } catch (error) {
         message.error('获取评论失败');
@@ -63,7 +86,9 @@ export default defineComponent({
 
     const deleteReview = async (reviewId: string) => {
       try {
-        await axios.delete(`/api/reviews/${reviewId}`);
+        await axios.delete(`http://localhost:8000/api/reviews/${reviewId}`,
+          { headers: { 'Authorization': `Bearer ${useUserStore().token}` } }
+        );
         message.success('评论已删除');
         await fetchReviews();
       } catch (error) {
@@ -117,4 +142,4 @@ export default defineComponent({
 .review-content {
   margin: 16px 0;
 }
-</style> 
+</style>

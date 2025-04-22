@@ -39,19 +39,20 @@ async def get_my_favorites(current_user: User = Depends(get_current_user)):
     db = get_database()
     # 获取用户的收藏电影列表
     favorites = await db.favorites.find({"user_id": str(current_user.user_id)}).sort("created_at", -1).to_list(None)
-    
     # 获取收藏电影的详细信息
-    movie_ids = [fav["user_id"] for fav in favorites]
+    movie_ids = [fav["movie_id"] for fav in favorites]
     movies = await db.movies.find({"movie_id": {"$in": movie_ids}}).to_list(None)
-    
     # 将收藏时间添加到电影信息中
     movie_dict = {movie["movie_id"]: movie for movie in movies}
     result = []
     for fav in favorites:
         if fav["movie_id"] in movie_dict:
-            movie_info = movie_dict[fav["movie_id"]]
-            movie_info["favorite_id"] = fav["_id"]
-            movie_info["favorited_at"] = fav["created_at"]
+            movie_info = movie_dict[fav["movie_id"]].copy()
+            movie_info.update({
+                "favorite_id": str(fav["_id"]),  # 转换 ObjectId 为字符串
+                "favorited_at": fav["created_at"],
+                "_id": str(movie_info["_id"])    # 转换电影文档的 ObjectId
+            })
             result.append(movie_info)
     
     return result

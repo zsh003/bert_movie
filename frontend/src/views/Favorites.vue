@@ -5,10 +5,14 @@
       <a-col :span="6" v-for="movie in favorites" :key="movie._id">
         <a-card hoverable>
           <template #cover>
-            <img :alt="movie.title" :src="movie.poster" />
+            <img 
+                :src="movie.img.content ? 'data:image/webp;base64,' + movie.img.content : ''" 
+                :alt="movie.title"
+                style="width: 100%; height: 300px; object-fit: contain;" 
+              />
           </template>
           <template #actions>
-            <a-button type="link" @click="goToMovie(movie._id)">
+            <a-button type="link" @click="goToMovie(movie.movie_id)">
               查看详情
             </a-button>
             <a-button type="link" danger @click="removeFavorite(movie.favorite_id)">
@@ -31,11 +35,14 @@ import { defineComponent, ref, onMounted } from 'vue';
 import { message } from 'ant-design-vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { useUserStore } from '../stores/user'
 
 interface Movie {
   _id: string;
+  movie_id: string;
   title: string;
   poster: string;
+  img: string;
   favorite_id: string;
   favorited_at: string;
 }
@@ -50,8 +57,11 @@ export default defineComponent({
     const fetchFavorites = async () => {
       loading.value = true;
       try {
-        const response = await axios.get('http://localhost:8000/api/favorites');
+        const response = await axios.get('http://localhost:8000/api/favorites',
+          { headers: { 'Authorization': `Bearer ${useUserStore().token}` } }
+        );
         favorites.value = response.data;
+        console.log(favorites.value);
       } catch (error) {
         message.error('获取收藏失败');
       }
@@ -60,7 +70,9 @@ export default defineComponent({
 
     const removeFavorite = async (favoriteId: string) => {
       try {
-        await axios.delete(`/api/favorites/${favoriteId}`);
+        await axios.delete(`http://localhost:8000/api/favorites/${favoriteId}`
+          , { headers: { 'Authorization': `Bearer ${useUserStore().token}` } }
+        );
         message.success('已取消收藏');
         await fetchFavorites();
       } catch (error) {
